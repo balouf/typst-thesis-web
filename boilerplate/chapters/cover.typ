@@ -19,7 +19,7 @@
       )
     ]
     #if thesis-jury.len() > 0 {
-      html.elem("ul", attrs: (class: "jury"), {
+      html.elem("ul", attrs: (class: "jury", style: "text-align: left"), {
         for member in thesis-jury {
           html.elem("li")[
             #member.name, #member.position — _#jury-role(member.role-key)_
