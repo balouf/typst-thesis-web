@@ -45,6 +45,9 @@ Keyword 1 --- Keyword 2 --- Keyword 3
 // TODO: adapt — replace with your name
 #let thesis-author = [Prénom #smallcaps[Nom]]
 
+// TODO: adapt — replace with your document type
+#let thesis-type = t([Thèse de doctorat], [Doctoral Dissertation])
+
 // TODO: adapt — replace with your defense date
 #let thesis-date = t([1er janvier 2026], [January 1, 2026])
 

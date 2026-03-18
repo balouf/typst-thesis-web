@@ -19,8 +19,8 @@
 // #init-acronyms(acronyms)
 
 // Show rules
-// TODO: adapt — apply your thesis style
-// #show: thesis-style
+// TODO: adapt — customize your thesis style in templates/thesis-style.typ
+#show: thesis-style
 #show: thmrules
 
 // -----------------------------------------------------------------------------

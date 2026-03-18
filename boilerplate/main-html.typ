@@ -23,9 +23,9 @@
 // TODO: adapt — initialize acronyms if you use them
 // #init-acronyms(acronyms)
 
-// TODO: adapt — apply your thesis style if needed (page/headers are ignored in HTML)
-// #import "templates/thesis-style.typ": *
-// #show: thesis-style
+// TODO: adapt — customize your thesis style in templates/thesis-style.typ
+#import "templates/thesis-style.typ": *
+#show: thesis-style
 
 // Show rules
 #show: html-show-rules
@@ -48,10 +48,9 @@
 // Cover page (HTML version)
 // -----------------------------------------------------------------------------
 
-// TODO: adapt — include your HTML cover page
+// TODO: adapt — customize your HTML cover page in chapters/cover.typ
 #chapter-section("cover")[
-  // #include "chapters/cover.typ"
-  = #thesis-title
+  #include "chapters/cover.typ"
 ]
 
 // -----------------------------------------------------------------------------
