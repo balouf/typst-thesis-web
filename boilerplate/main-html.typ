@@ -18,7 +18,7 @@
 #import "templates/algorithms.typ": *
 #import "templates/acronyms.typ": *
 #import "templates/html-overrides.typ": *
-#import "templates/prelude.typ": double-vowels
+#import "templates/prelude.typ": *
 
 // TODO: adapt — initialize acronyms if you use them
 // #init-acronyms(acronyms)
@@ -28,7 +28,6 @@
 // #show: thesis-style
 
 // Show rules
-#show: double-vowels
 #show: html-show-rules
 #show: thmrules
 

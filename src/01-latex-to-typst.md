@@ -122,24 +122,26 @@ Download the right one from the
 
 ### French ligatures (oe, ae)
 
-French text contains ligatures like "oeuvre" (which should render as "oeuvre"
-with the oe ligature). LaTeX handles these through font ligatures, but Typst
-needs the actual Unicode characters.
+French text contains ligatures like "œuvre" or "nœud". LaTeX handles these
+through font ligatures, but Typst needs the actual Unicode characters.
 
-The boilerplate includes a `double-vowels` show rule in `prelude.typ`:
+The boilerplate defines shorthand variables in `prelude.typ`:
 
 ```typst
-#let double-vowels(body) = {
-  show "oe": "œ"
-  show "Oe": "Œ"
-  show "ae": "æ"
-  show "Ae": "Æ"
-  body
-}
+#let oe = "œ"
+#let OE = "Œ"
+#let ae = "æ"
+#let AE = "Æ"
 ```
 
-Apply it in `main.typ` with `#show: double-vowels`. This automatically
-replaces ASCII sequences with their proper Unicode ligatures.
+Use them inline with `#{}` syntax: `n#{oe}ud`, `c#{oe}ur`, `#{oe}uvre`.
+You can also type the Unicode characters directly (`œ`, `æ`) if your keyboard
+layout supports it.
+
+> **Why not a global show rule?** A blanket `show "oe": "œ"` would produce
+> false positives: "coefficient" → "cœfficient", and every English "oe"
+> (does, goes, poem…) would be corrupted. Explicit characters avoid this
+> entirely.
 
 ### Encoding
 

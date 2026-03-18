@@ -19,7 +19,6 @@
 // #init-acronyms(acronyms)
 
 // Show rules
-#show: double-vowels
 // TODO: adapt — apply your thesis style
 // #show: thesis-style
 #show: thmrules
