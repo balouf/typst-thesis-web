@@ -1,0 +1,10 @@
+# mdBook build output
+book/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude workspace
+.claude/

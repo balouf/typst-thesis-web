@@ -1,0 +1,8 @@
+[book]
+authors = ["Fabien Mathieu"]
+language = "en"
+src = "src"
+title = "Typst Thesis Web"
+
+[output.html]
+git-repository-url = "https://github.com/balouf/typst-thesis-web"
