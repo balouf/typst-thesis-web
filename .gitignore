@@ -8,3 +8,7 @@ desktop.ini
 
 # Claude workspace
 .claude/
+
+# Python
+__pycache__/
+*.pyc

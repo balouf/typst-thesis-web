@@ -2,7 +2,7 @@
 // Theorem environments
 // =============================================================================
 //
-// Minimal definitions so the boilerplate compiles out of the box.
+// Minimal definitions so the example compiles out of the box.
 // TODO: adapt — customize styles, add lemma, proposition, corollary, etc.
 // See the ctheorems package: https://typst.app/universe/package/ctheorems
 // =============================================================================
