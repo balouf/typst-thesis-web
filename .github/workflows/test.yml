@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Typst's HTML export is experimental: once a week, compile the examples
+    # with the latest Typst to learn early when its output changes.
+    - cron: '0 6 * * 1'
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        typst: ['0.15.1', 'latest']
+    # The pinned version must pass; the latest one is a warning light.
+    continue-on-error: ${{ matrix.typst == 'latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v4
+        with:
+          typst-version: ${{ matrix.typst }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
+
+      - name: Compile the examples and check their output
+        run: uv run --with pytest pytest -q

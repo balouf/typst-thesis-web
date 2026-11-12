@@ -60,10 +60,16 @@
   include "chapters/example.typ"
 }
 
+#if lang == "en" {
+  include "chapters/second.en.typ"
+} else {
+  include "chapters/second.typ"
+}
+
 // -----------------------------------------------------------------------------
 // Bibliography
 // -----------------------------------------------------------------------------
 
-// TODO: adapt — point to your .bib and .csl files
-// #pagebreak()
-// #bibliography("references.bib", style: "springer-lncs-alphabetical.csl")
+// TODO: adapt — point to your .bib (and .csl) file
+#pagebreak()
+#bibliography("references.bib")

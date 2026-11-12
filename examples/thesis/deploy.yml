@@ -26,7 +26,7 @@ jobs:
       - name: Install Typst
         uses: typst-community/setup-typst@v4
         with:
-          typst-version: '0.14.2'
+          typst-version: '0.15.1'
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -34,9 +34,7 @@ jobs:
           enable-cache: false
 
       - name: Build site
-        # TODO: adapt — change --base-url to match your GitHub Pages path
-        # e.g. /your-repo-name/ for https://username.github.io/your-repo-name/
-        run: uv run web/build.py --base-url /your-repo-name/
+        run: uv run web/build.py
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -3,9 +3,9 @@
 // =============================================================================
 //
 // TODO: adapt — define your acronyms here.
-// See the acrotastic package: https://typst.app/universe/package/acrotastic
+// See the acrostiche package: https://typst.app/universe/package/acrostiche
 // Example:
-//   #import "@preview/acrotastic:0.2.0": *
+//   #import "@preview/acrostiche:0.7.0": *
 //   #let acronyms = (
 //     "P2P": ("Pair-à-pair", "Peer-to-Peer"),
 //   )
