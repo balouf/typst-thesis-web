@@ -59,7 +59,8 @@ A paper rather than a thesis? Section 3 is all you need.
 ```
 lib/                    # the web layer: copy these into your project
   web.typ               #   show rules, article page, site pages
-  web.css               #   stylesheet, light and dark
+  web-content.css       #   styles of what a document contains
+  web.css               #   the page around it, light and dark
   web.js                #   sites only: theme toggle, search, small screens
 tools/
   check.py              # did anything get lost on the way to HTML?

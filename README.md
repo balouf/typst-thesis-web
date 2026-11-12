@@ -9,7 +9,7 @@ touching the sections**. Mathematics is native MathML.
 The repository holds:
 
 - `lib/` — the web layer you copy into your project: `web.typ` (show rules and page
-  functions), `web.css`, and `web.js` for multi-page sites;
+  functions), `web-content.css` and `web.css`, and `web.js` for multi-page sites;
 - `tools/check.py` — compiles a web edition and reports what did not reach the HTML;
 - `examples/` — a paper and a bilingual thesis, ready to copy;
 - `src/` — the guide, which also covers LaTeX conversion, bilingual PDF output and
@@ -26,7 +26,8 @@ It targets **Typst 0.15.1**. HTML export is still experimental in Typst: pin the
 
 ### A paper, as one page
 
-1. Copy `lib/web.typ` and `lib/web.css` into a `web/` folder of your project.
+1. Copy `lib/web.typ`, `lib/web-content.css` and `lib/web.css` into a `web/` folder of
+   your project.
 2. Write a `web.typ` entry next to your PDF entry file, on the model of
    [`examples/article/web.typ`](examples/article/web.typ): your content rules, then
    `#show: web-rules`, then `#show: article.with(...)`, then the same `#include`s.

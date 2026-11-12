@@ -14,7 +14,7 @@ your-thesis/
 ├── main.typ              # PDF entry point
 ├── main-html.typ         # web entry point: one page(...) per chapter
 ├── templates/            # your templates
-│   └── web/              # the web layer, vendored: web.typ, web.css, web.js
+│   └── web/              # the web layer, vendored: web.typ, web-content.css, web.css, web.js
 ├── chapters/             # chapter source files (.typ)
 ├── figures/
 ├── web/

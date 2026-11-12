@@ -5,12 +5,13 @@ to get a web edition of a paper (one self-contained page) or of a thesis (one pa
 chapter) **without touching the sections or chapters**, and how to check that nothing
 was lost on the way.
 
-Everything rests on three files that you copy into your project, and one script:
+Everything rests on four files that you copy into your project, and one script:
 
 | File | Role |
 |------|------|
 | `web.typ` | The web layer: Typst show rules and page-building functions. |
-| `web.css` | The stylesheet, light and dark. |
+| `web-content.css` | Styles of what a document contains: equations, drawings, figures, statements, notes. |
+| `web.css` | The page around it, light and dark: typography, layouts, navigation. |
 | `web.js` | Multi-page sites only: theme toggle, search, navigation on small screens. |
 | `tools/check.py` | Compiles a web edition and reports what did not make it to HTML. |
 
@@ -103,8 +104,10 @@ PDF *looks*:
 
 If your template is one function, split it: it is a mechanical change, and the PDF does
 not move (both reference theses were split this way and their PDFs are byte-identical
-before and after). A vendored template you do not own is simply left out of the web
-entry: `article` builds the title block.
+before and after). To compare PDFs byte for byte, set `SOURCE_DATE_EPOCH=0` for both
+builds: a PDF carries its creation date, so two plain builds of the same source already
+differ. A vendored template you do not own is simply left out of the web entry:
+`article` builds the title block.
 
 ## What `web-rules` does
 
@@ -119,7 +122,7 @@ inside an SVG frame either (frames are laid out as paged content).
 | `v`, `pagebreak`, `colbreak`, `hide` | nothing |
 | `grid`, shapes, transforms, `layout` callbacks, fixed-size boxes and blocks | an inline SVG (this covers cetz, fletcher, droplet) |
 | a `box` that holds a `place` (one drawing set on another) | one SVG, sized to cover what sticks out of the box |
-| `heading` | a real `<h1>`–`<h6>` with its number, whatever the template did |
+| `heading` | a real `<h1>`–`<h6>` with its number, whatever the template did, and a stable id (see below) |
 | `figure` with a string `kind` and no caption | a statement: `<div class="env env-KIND">` |
 | `figure` whose kind is in `frame-kinds` (`"algorithm"`) | an SVG with its caption |
 | other figures | `<figure>` and `<figcaption>`; a drawing that contains no image is framed |
@@ -180,7 +183,23 @@ dark theme follows the reader's system. No script, no post-processing. See
 [`examples/article`](https://github.com/balouf/typst-thesis-web/tree/main/examples/article).
 
 `article` prints the title block, a table of contents (`toc: false` to remove it, or a
-depth) and wraps the body. In a PDF build it returns the body unchanged.
+depth) and wraps the body. In a PDF build it returns the body unchanged. With
+`emails: false` the e-mail addresses stay out of the page: a `mailto:` link on a public
+page is harvested more readily than an address in a PDF.
+
+Keep what both editions print (title, abstract, keywords) in a data file that each
+entry imports, as `meta.typ` does in the example, rather than importing one entry file
+from another. For a double-blind submission, put the authors in a file of their own,
+imported by the non-anonymous editions only: the anonymous build then never loads a
+name.
+
+### Anchors
+
+Every element with a label gets an id made from it (`<thm:main>` gives `#thm-main`). A
+heading without a label gets an id made from its text (`Related work` gives
+`#related-work`, a second one on the same page `#related-work-2`), so a link to a
+section keeps working when the document changes elsewhere. Label a heading to choose
+its anchor; pass `heading-id: it => none` to `web-rules` to leave the ids to Typst.
 
 ## A thesis: one page per chapter
 
@@ -325,17 +344,57 @@ to another program; `--out` keeps the compiled page.
 
 ## Styling
 
-`web.css` is driven by CSS variables (colors, widths, fonts) declared at the top of the
-file. To adjust a site, pass extra CSS rather than editing the vendored file:
+The two stylesheets are driven by CSS variables (colors, widths, fonts) declared at the
+top of `web.css`. To adjust a site, pass extra CSS rather than editing the vendored
+files:
 
 ```typ
 #let site = (title: "...", css: read("web/thesis.css"))   // a site
-#show: article.with(css: read("web/web.css") + read("paper.css"))   // a page
+#show: article.with(css: read("web/web-content.css") + read("web/web.css") + read("paper.css"))   // a page
 ```
 
 Mathematics is rendered by the browser with a math font of the reader's system; the
 stylesheet asks for New Computer Modern Math, Latin Modern Math, STIX Two Math and
 Cambria Math, in that order.
+
+## Inside another site
+
+A paper can also be a page of an existing documentation site (Sphinx, mdBook, Jupyter
+Book), with the navigation, search and theme of that site. The layer is split for this:
+
+- `web-content.css` styles what the document contains and nothing else. Its rules are
+  scoped to a container of class `typst` (with `:where()`, so they weigh no more than
+  unscoped rules) and take their colors from CSS variables listed at the top of the
+  file.
+- Anchors are stable (see above), so the host can keep the ids on its own headings.
+
+The integration itself belongs to the host: compile the web entry, take the article
+header (keep its class `article-header`), the content of `<main>` and the endnotes,
+wrap them in `<div class="typst">`, and load `web-content.css` unchanged after the
+theme, preceded by a few lines that map the theme to the variables:
+
+```css
+.typst {
+  --color-text: var(--pst-color-text-base);          /* pydata-sphinx-theme, as an example */
+  --color-text-muted: var(--pst-color-text-muted);
+  --color-bg: var(--pst-color-background);
+  --color-sidebar-bg: var(--pst-color-surface);
+  --color-border: var(--pst-color-border);
+  --color-border-strong: var(--pst-color-border);
+  --color-link: var(--pst-color-link);
+  --font-math: "New Computer Modern Math", "Latin Modern Math", "STIX Two Math", "Cambria Math", math;
+  --font-heading: var(--pst-font-family-heading);
+  --box-fill-share: 100%;
+  --frame-filter: none;
+}
+html[data-theme="dark"] .typst {
+  --box-fill-share: 0%;
+  --frame-filter: invert(1) hue-rotate(180deg);
+}
+```
+
+Headings, links, tables and code keep the style of the host. No converter ships with the
+layer: how a host wants its headings and its table of contents is its own business.
 
 ## Limits
 
@@ -356,7 +415,7 @@ Cambria Math, in that order.
 
 ## Updating the layer
 
-The copies of `web.typ`, `web.css` and `web.js` in your project are meant to stay
+The copies of `web.typ`, `web-content.css`, `web.css` and `web.js` in your project are meant to stay
 unmodified: record local patches in the header of `web.typ`. To refresh them from a
 checkout of this repository:
 
