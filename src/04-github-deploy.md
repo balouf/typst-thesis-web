@@ -95,6 +95,8 @@ The workflow (in `examples/thesis/deploy.yml`, to be moved to
   upgrade deliberately, and run `check.py` when you do.
 - **`enable-cache: false`** on `setup-uv`: `build.py` declares its dependencies inline
   (the `# /// script` header) and there is no lock file for the cache to key on.
+- **Action versions**: major tags (`actions/checkout@v7`), except `setup-uv`, which has
+  published no moving major tag since v8 and is pinned to a full version.
 
 ## Enabling GitHub Pages
 

@@ -20,15 +20,16 @@ jobs:
     # The pinned version must pass; the latest one is a warning light.
     continue-on-error: ${{ matrix.typst == 'latest' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Typst
-        uses: typst-community/setup-typst@v4
+        uses: typst-community/setup-typst@v5
         with:
           typst-version: ${{ matrix.typst }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        # Full version on purpose: setup-uv has had no moving major tag since v8.
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: false
 
