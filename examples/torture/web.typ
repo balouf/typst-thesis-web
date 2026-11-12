@@ -13,9 +13,11 @@
 #show: article.with(
   title: [A hostile template],
   authors: (
-    (name: "Ada Lovelace", orcid: "0000-0000-0000-0000", affiliations: [Analytical Engine Works]),
+    (name: "Ada Lovelace", orcid: "0000-0000-0000-0000", email: "ada@example.org", affiliations: [Analytical Engine Works]),
     "Alan Turing",
   ),
+  // `--input emails=false` builds the page without the addresses (see the tests).
+  emails: sys.inputs.at("emails", default: "true") == "true",
   abstract: [Every construct of this document is dropped or mangled by a plain HTML export.],
   keywords: ("typst", "html"),
   links: (("PDF", "main.pdf"),),

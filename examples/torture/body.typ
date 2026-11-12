@@ -115,3 +115,13 @@ A fletcher diagram:
 ) <tab:kv>
 
 See @fig:image, @fig:cetz, @fig:grid, @alg:gcd, @tab:kv and @lamport1994.
+
+= Headings without a label
+
+== Further reading
+
+A heading without a label gets an id made from its text.
+
+== Further reading
+
+A second heading with the same text gets a suffix.

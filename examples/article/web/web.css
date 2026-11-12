@@ -1,5 +1,7 @@
-/* web.css — stylesheet shipped with web.typ (same version, same folder).
-   One file for both layouts:
+/* web.css — the page around a document exported with web.typ: colors and
+   typography, the two layouts, the navigation of a site. Shipped with web.typ
+   (same version, same folder), next to web-content.css, which styles what the
+   document itself contains and can be loaded alone by another site.
      - article: <header.article-header> <nav role=doc-toc> <main.article>
      - site:    <header.topbar> <aside.sidebar-left> <aside.sidebar-right>
                 <footer.page-nav> <main.content>
@@ -108,9 +110,6 @@ body {
 a { color: var(--color-link); text-decoration: none; }
 a:hover { color: var(--color-link-hover); text-decoration: underline; }
 
-/* Typst writes pixel sizes on <img> and em sizes on frame <svg>. */
-img { max-width: 100%; height: auto; }
-
 h1, h2, h3 { font-family: var(--font-heading); line-height: 1.3; }
 h1 { font-size: 2rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--color-border); }
 h2 { font-size: 1.5rem; margin: 2rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--color-border); }
@@ -123,8 +122,6 @@ h1 .num, h2 .num, h3 .num, h4 .num { color: var(--color-text-muted); }
 main, .article-header .abstract { text-align: justify; hyphens: auto; }
 h1, h2, h3, h4, h5, h6, figcaption, th, td, pre, nav { text-align: left; hyphens: manual; }
 p { margin: 0 0 1em; }
-/* A bare <div> is a Typst block (a proof, a restated statement, ...). */
-main > div:not([class]) { margin: 1em 0; }
 dt { font-weight: bold; }
 dd { margin-bottom: 0.5em; }
 sup { font-size: 0.75em; line-height: 0; }
@@ -144,112 +141,14 @@ table { border-collapse: collapse; margin: 1em auto; font-size: 0.9em; }
 th, td { padding: 0.5em 0.75em; border: 1px solid var(--color-border); text-align: left; }
 th { background: var(--color-sidebar-bg); font-weight: 600; }
 
-/* ---------------------------------------------------------------------------
-   Mathematics (MathML)
-   --------------------------------------------------------------------------- */
-
+/* Math in navigation titles and in the endnotes, which sit outside the
+   content containers styled by web-content.css. */
 math { font-family: var(--font-math); }
-math[display="block"] { display: block math; margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
-
-/* Numbered block equation: <div class="eq"><math/><div class="eq-num"/></div>.
-   Both share one grid cell: the equation is centered on the full width and the
-   number sits on the right, as in print. No track sizing is involved, which
-   browsers resolve differently for block math. */
-.eq { display: grid; align-items: center; margin: 1em 0; }
-.eq > * { grid-area: 1 / 1; }
-.eq > :first-child { margin: 0; min-width: 0; padding-inline: 3.5em; }
-.eq > .eq-num { justify-self: end; color: var(--color-text-muted); }
 
 /* ---------------------------------------------------------------------------
-   SVG frames (html.frame): drawings, grids, algorithms
+   Table of contents: web.typ's flat `toc()` list, or Typst's nested `outline()`
    --------------------------------------------------------------------------- */
 
-main svg, .article-header svg {
-  max-width: 100%;
-  height: auto !important;
-  filter: var(--frame-filter);
-}
-figure > svg, main > svg { margin-inline: auto; }
-/* A frame set as a block (a grid, a drawing) is spaced like a paragraph. */
-main svg[style*="display: block"] { margin-block: 1em; }
-figure > svg[style*="display: block"] { margin-block: 0; }
-/* Photographs keep their colors inside a frame that a dark page inverts. */
-main svg image:is([*|href^="data:image/png"], [*|href^="data:image/jpeg"], [*|href^="data:image/gif"], [*|href^="data:image/webp"]) {
-  filter: var(--frame-filter);
-}
-
-/* PDF figures reach HTML as SVG data URIs, usually black on transparent. */
-:root[data-theme="dark"] figure img[src^="data:image/svg+xml"] { filter: invert(1) hue-rotate(180deg); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) figure img[src^="data:image/svg+xml"] { filter: invert(1) hue-rotate(180deg); }
-}
-
-/* ---------------------------------------------------------------------------
-   Figures
-   --------------------------------------------------------------------------- */
-
-figure { margin: 1.5em 0; text-align: center; }
-figcaption { font-size: 0.9em; color: var(--color-text-muted); margin-top: 0.5em; }
-.caption-label { font-weight: 600; color: var(--color-text); }
-
-/* ---------------------------------------------------------------------------
-   Theorem-like statements and boxes
-   .env  : a figure with a string kind and no caption (class env-KIND)
-   .box  : a Typst block with a fill or a stroke; colors come from Typst as
-           --box-fill / --box-stroke; a dark page tints with the stroke
-   --------------------------------------------------------------------------- */
-
-.env {
-  margin: 1.2em 0;
-  padding-left: 1em;
-  border-left: 3px solid var(--color-border-strong);
-}
-.env:has(> .box), .env-plain { padding-left: 0; border-left: none; }
-
-.box {
-  margin: 1em 0;
-  padding: 0.8em 1em;
-  border: 1px solid var(--box-stroke, transparent);
-  border-left-width: 4px;
-  border-radius: 4px;
-  --box-tint: color-mix(in srgb, var(--box-stroke, var(--box-fill, transparent)) 16%, var(--color-bg));
-  background: color-mix(in srgb, var(--box-fill, transparent) var(--box-fill-share), var(--box-tint));
-}
-.env > .box { margin: 0; }
-.env p:last-child, .box p:last-child { margin-bottom: 0; }
-
-/* Emphasis around block content (an italic theorem body with paragraphs,
-   lists, displayed equations) is a <div>, kept in line with the head. */
-div.em { display: inline; font-style: italic; }
-div.strong { display: inline; font-weight: bold; }
-div.em::before, div.strong::before { content: " "; }
-div.em > p:first-child, div.strong > p:first-child { display: inline; }
-div.em > p:first-child::after, div.strong > p:first-child::after { content: ""; display: block; margin-bottom: 1em; }
-
-ol.enum-custom { list-style: none; padding-left: 2.5em; }
-ol.enum-custom > li > .enum-num { display: inline-block; min-width: 2em; margin-left: -2.5em; text-align: right; }
-
-/* ---------------------------------------------------------------------------
-   Notes and bibliography (roles emitted by Typst)
-   --------------------------------------------------------------------------- */
-
-section[role="doc-endnotes"] {
-  margin-top: 2em;
-  padding-top: 1em;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.9em;
-  color: var(--color-text-muted);
-}
-section[role="doc-endnotes"] ol { padding-left: 0; margin: 0; }
-section[role="doc-endnotes"] li { margin-bottom: 0.5em; }
-[role="doc-backlink"] { margin-right: 0.3em; }
-
-section[role="doc-bibliography"] { font-size: 0.92em; }
-section[role="doc-bibliography"] ul { padding-left: 0; }
-section[role="doc-bibliography"] li { margin-bottom: 0.6em; }
-section[role="doc-bibliography"] .prefix { margin-right: 0.5em; }
-
-/* Table of contents: web.typ's flat `toc()` list, or Typst's nested `outline()` */
 nav[role="doc-toc"] ul, nav[role="doc-toc"] ol { list-style: none; margin: 0; padding-left: 1em; }
 nav[role="doc-toc"] > ul, nav[role="doc-toc"] > ol { padding-left: 0; }
 nav[role="doc-toc"] .toc-l2 { padding-left: 1em; }
@@ -302,36 +201,6 @@ body > nav[role="doc-toc"] a { color: var(--color-text-muted); }
 body > nav[role="doc-toc"] a:hover { color: var(--color-text); text-decoration: none; }
 
 .article-header .title { font-size: 2.1rem; border: none; margin: 0 0 1rem; padding: 0; }
-.article-header .authors { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.5rem; }
-.article-header .authors .name { font-weight: 600; }
-.article-header .authors .affil { display: block; font-size: 0.9em; color: var(--color-text-muted); line-height: 1.4; }
-.article-header .orcid, .article-header .email {
-  font-family: var(--font-heading);
-  font-size: 0.7em;
-  vertical-align: 0.15em;
-  padding: 0 0.35em;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 1em;
-  color: var(--color-text-muted);
-}
-.article-header .orcid:hover, .article-header .email:hover { color: var(--color-link); text-decoration: none; }
-.article-header .date { color: var(--color-text-muted); }
-.article-header .links { display: flex; flex-wrap: wrap; gap: 0.5rem; text-align: left; }
-.article-header .links a {
-  padding: 0.25rem 0.8rem;
-  border: 1px solid var(--color-link);
-  border-radius: 6px;
-  font-family: var(--font-heading);
-  font-size: 0.85rem;
-}
-.article-header .links a:hover { background: var(--color-link); color: var(--color-bg); text-decoration: none; }
-.article-header .abstract { margin: 1.5rem 0 1rem; padding: 1rem 1.25rem; background: var(--color-sidebar-bg); border-radius: 6px; }
-.article-header .abstract h2 { font-size: 1rem; border: none; margin: 0 0 0.5rem; padding: 0; }
-.article-header .abstract p:last-child { margin-bottom: 0; }
-.article-header .keywords { font-size: 0.9em; text-align: left; color: var(--color-text-muted); }
-.article-header .meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.3em 1em; margin: 0 0 1rem; font-size: 0.9em; color: var(--color-text-muted); }
-.article-header .meta dt { font-weight: 600; }
-.article-header .meta dd { margin: 0; overflow-wrap: anywhere; }
 
 @media (max-width: 1000px) {
   body:has(> main.article) {
@@ -563,13 +432,6 @@ body:has(> header.topbar) > section[role="doc-endnotes"] { grid-area: notes; }
 }
 .btn-pdf:hover { background: var(--color-link); color: var(--color-bg); text-decoration: none; }
 
-/* Epigraph and drop cap, for templates that tag them */
-.epigraph { width: 55%; margin: 1em 0 1.5em auto; padding: 0; border-left: none; color: inherit; font-style: italic; font-size: 0.95em; }
-.epigraph .epigraph-author { text-align: right; font-style: normal; margin-top: 0.3em; }
-.epigraph .epigraph-author::before { content: "— "; }
-.lettrine::first-letter { font-size: 2.5em; float: left; line-height: 1; margin-right: 2px; }
-.qed { display: block; text-align: right; }
-
 /* Overlays created by web.js */
 .sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 149; background: var(--color-backdrop); }
 .sidebar-backdrop.visible { display: block; }
@@ -653,7 +515,6 @@ body:has(> header.topbar) > section[role="doc-endnotes"] { grid-area: notes; }
   .topbar-title { font-size: 0.8rem; max-width: 40vw; }
   main.content, body:has(> header.topbar) > section[role="doc-endnotes"], .page-nav { padding-inline: 1rem; }
   body:has(> main.article) { padding-inline: 1rem; }
-  .epigraph { width: 85%; }
 }
 
 @media print {

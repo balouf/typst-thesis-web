@@ -10,6 +10,7 @@ expected numbers are the census of each example's output (see tools/check.py).
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -31,7 +32,7 @@ EXAMPLES = {
     "torture": (
         ".",
         ["examples/torture/web.typ", "--root", "."],
-        {"headings": 6, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
+        {"headings": 9, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
          "numbered-equations": 3, "inline-equations": 6, "footnotes": 1, "citations": 2},
     ),
     "thesis-fr": (
@@ -93,6 +94,40 @@ def test_thesis_site_pages(tmp_path: Path):
     assert 'href="example.html#thm-example"' in second  # a label becomes a stable anchor
     assert 'href="../en/second.html"' in second  # language switch
     assert '<li class="active"><a href="second.html">' in second
+
+
+def test_heading_ids_and_emails(tmp_path: Path):
+    """Headings get stable ids; `emails: false` keeps the addresses off the page."""
+    cmd = ["typst", "compile", "--root", ".", "--features", "html", "examples/torture/web.typ"]
+    out = tmp_path / "torture.html"
+    done = run([*cmd, str(out)], ".")
+    assert done.returncode == 0, done.stderr
+    page = out.read_text(encoding="utf-8")
+    assert 'id="sec-math"' in page  # from the label
+    assert 'id="headings-without-a-label"' in page  # from the text
+    assert 'id="further-reading"' in page and 'id="further-reading-2"' in page  # same text twice
+    assert "mailto:ada@example.org" in page
+    done = run([*cmd, "--input", "emails=false", str(out)], ".")
+    assert done.returncode == 0, done.stderr
+    assert "ada@example.org" not in out.read_text(encoding="utf-8")
+
+
+def test_content_stylesheet_is_embeddable():
+    """web-content.css must work inside another site: every rule is scoped to
+    .typst, or names something only Typst or web.typ emits."""
+    css = re.sub(r"/\*.*?\*/", "", (REPO / "lib" / "web-content.css").read_text(encoding="utf-8"), flags=re.S)
+    css = re.sub(r"@media[^{]*\{", "", css)
+    allowed = (":where(.typst) ", ".article-header ", 'section[role="doc-endnotes"]', '[role="doc-backlink"]')
+    selectors = []
+    for group in re.findall(r"([^{}]+)\{[^{}]*\}", css):
+        depth, start = 0, 0
+        for i, char in enumerate(group + ","):  # split on the commas outside (...) and [...]
+            depth += (char in "([") - (char in ")]")
+            if char == "," and depth == 0:
+                selectors.append(group[start:i].strip())
+                start = i + 1
+    assert len(selectors) > 50
+    assert [s for s in selectors if not s.startswith(allowed)] == []
 
 
 def test_vendored_copies_are_current():

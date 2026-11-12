@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Copy the layer (lib/web.typ, web.css, web.js) to where it is vendored.
+"""Copy the layer (lib/web.typ, web-content.css, web.css, web.js) to where it is vendored.
 
     uv run tools/sync.py                 # refresh the copies kept in examples/
     uv run tools/sync.py DEST [DEST...]  # vendor into other folders
@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LIB = REPO / "lib"
-FILES = ["web.typ", "web.css", "web.js"]
+FILES = ["web.typ", "web-content.css", "web.css", "web.js"]
 
 
 def copies_in_repo() -> list[Path]:

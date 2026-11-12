@@ -1,9 +1,10 @@
 // web.typ — web export layer (HTML and bundle targets) for Typst documents.
 // Source: https://github.com/balouf/typst-thesis-web (MIT)
-// Version 0.2.1 (2026-11-12), checked with Typst 0.15.1.
+// Version 0.3.0 (2026-11-12), checked with Typst 0.15.1.
 // Vendored copy: keep it unmodified and list local patches below.
 //   Local patches: none.
-// Ships with web.css (and web.js for multi-page sites): keep them next to this file.
+// Ships with web-content.css, web.css (and web.js for multi-page sites): keep
+// them next to this file.
 //
 // A web edition is a small entry file next to the PDF one. Order matters:
 //   1. project rules that REPLACE elements (numbering, custom `show ref`, ...)
@@ -22,7 +23,7 @@
   message: "web.typ needs Typst 0.15 or later",
 )
 
-#let web-version = version(0, 2, 1)
+#let web-version = version(0, 3, 0)
 
 // -----------------------------------------------------------------------------
 // Guards and small helpers
@@ -225,32 +226,14 @@
   body
 }
 
-/// Default rendering of a heading number: `<span class="num">1.2</span> `.
-#let heading-number(it, number) = {
-  html.elem("span", attrs: (class: "num"), number)
-  [ ]
-}
+#let _space = [ ].func()
 
-/// Headings are rebuilt as real `<h1>`-`<h6>`, whatever a template did to them.
-/// `offset` is added to the level (1 keeps `<h1>` for the document title);
-/// `number` formats the number prefix as `(it, number) => content`.
-#let heading-rules(offset: 1, number: heading-number, body) = {
-  show heading: it => on-web(it, it => {
-    let n = if it.numbering != none {
-      numbering(it.numbering, ..counter(heading).at(it.location()))
-    }
-    html.elem("h" + str(calc.clamp(it.level + offset, 1, 6)), attrs: _anchor(it), {
-      if n != none { number(it, n) }
-      it.body
-    })
-  })
-  body
-}
-
-// Plain text of simple content, for class names.
+// Plain text of simple content, for class names and ids.
 #let _text(c) = {
   if type(c) == str { return c }
   if type(c) != content { return "" }
+  if c.func() in (_space, linebreak) { return " " }
+  if c.func() == smartquote { return "'" }
   if c.has("text") { return c.text }
   if c.has("children") { return c.children.map(_text).join("") }
   if c.has("body") { return _text(c.body) }
@@ -265,6 +248,48 @@
 )
 #let _slug(s) = {
   lower(s).clusters().map(c => _ascii.at(c, default: c)).join("").replace(regex("[^a-z0-9]+"), "-").trim("-")
+}
+
+/// Id of a heading: its label if it has one, else a slug of its text
+/// (`Related work` gives `related-work`), so that a link to a section survives
+/// edits elsewhere in the document. Headings of one page that share a text get
+/// `-2`, `-3`, ... Returning `none` leaves the id to Typst (`loc-N`, which
+/// shifts whenever the document changes). Contextual.
+#let heading-id(it) = {
+  if it.has("label") { return anchor-id(it.label) }
+  let slug = _slug(_text(plain(it.body)))
+  if slug == "" { return none }
+  // Earlier headings of the same HTML document: of the same page in a bundle
+  // (`page` marks its pages), of the whole source otherwise.
+  let sel = selector(heading).before(it.location(), inclusive: false)
+  let page = query(selector(<web-page>).before(it.location())).at(-1, default: none)
+  if page != none and page.value.at("bundle", default: false) { sel = sel.after(page.location()) }
+  let same = query(sel).filter(h => not h.has("label") and _slug(_text(plain(h.body))) == slug).len()
+  if same == 0 { slug } else { slug + "-" + str(same + 1) }
+}
+
+/// Default rendering of a heading number: `<span class="num">1.2</span> `.
+#let heading-number(it, number) = {
+  html.elem("span", attrs: (class: "num"), number)
+  [ ]
+}
+
+/// Headings are rebuilt as real `<h1>`-`<h6>`, whatever a template did to them.
+/// `offset` is added to the level (1 keeps `<h1>` for the document title);
+/// `number` formats the number prefix as `(it, number) => content`; `id` gives
+/// the id as `it => str` (or `none`).
+#let heading-rules(offset: 1, number: heading-number, id: heading-id, body) = {
+  show heading: it => on-web(it, it => {
+    let n = if it.numbering != none {
+      numbering(it.numbering, ..counter(heading).at(it.location()))
+    }
+    let anchor = id(it)
+    html.elem("h" + str(calc.clamp(it.level + offset, 1, 6)), attrs: if anchor != none { (id: anchor) } else { (:) }, {
+      if n != none { number(it, n) }
+      it.body
+    })
+  })
+  body
 }
 
 /// Figures.
@@ -389,6 +414,7 @@
 #let web-rules(
   heading-offset: 1,
   heading-number: heading-number,
+  heading-id: heading-id,
   frame-width: 45em,
   frame-kinds: ("algorithm",),
   env-kinds: ("thmenv",),
@@ -400,7 +426,7 @@
   show: transparent-rules
   show: spacing-rules
   show: frame-rules.with(width: frame-width)
-  show: heading-rules.with(offset: heading-offset, number: heading-number)
+  show: heading-rules.with(offset: heading-offset, number: heading-number, id: heading-id)
   show: figure-rules.with(frame-kinds: frame-kinds, env-kinds: env-kinds, frame-width: frame-width)
   show: math-rules.with(number: number-equations, svg: svg-math, tame-delimiters: tame-delimiters, frame-width: frame-width)
   show: text-rules
@@ -408,8 +434,12 @@
 }
 
 // -----------------------------------------------------------------------------
-// Interface strings
+// Stylesheets and interface strings
 // -----------------------------------------------------------------------------
+
+// What a document contains (also usable alone, inside another site), then the
+// page around it.
+#let _css() = read("web-content.css") + read("web.css")
 
 #let _strings = (
   en: (abstract: "Abstract", keywords: "Keywords", contents: "Contents", on-page: "On this page", search: "Search", menu: "Menu", theme: "Theme"),
@@ -446,7 +476,7 @@
 // Single-page article
 // -----------------------------------------------------------------------------
 
-#let _author-item(a) = {
+#let _author-item(a, emails: true) = {
   if type(a) != dictionary { a = (name: a) }
   html.elem("li", {
     html.elem("span", attrs: (class: "name"), a.name)
@@ -456,7 +486,7 @@
       html.elem("a", attrs: (class: "orcid", href: "https://orcid.org/" + orcid, title: "ORCID " + orcid), "iD")
     }
     let email = a.at("email", default: none)
-    if email != none {
+    if emails and email != none {
       [ ]
       html.elem("a", attrs: (class: "email", href: "mailto:" + email, title: email), "✉")
     }
@@ -477,7 +507,10 @@
 /// - meta: array of `(label, content)` pairs listed under the abstract
 ///   (supplementary material, funding, acknowledgements, ...).
 /// - toc: `true`, `false`, or the depth of the table of contents.
-/// - css: `auto` inlines web.css; a string replaces it; `none` emits nothing.
+/// - emails: `false` leaves the e-mail addresses out of the page (a `mailto:`
+///   link on a public page is harvested more readily than one in a PDF).
+/// - css: `auto` inlines web-content.css and web.css; a string replaces them;
+///   `none` emits nothing.
 #let article(
   title: none,
   authors: (),
@@ -487,15 +520,16 @@
   links: (),
   meta: (),
   toc: true,
+  emails: true,
   css: auto,
   body,
 ) = {
   set document(title: title) if title != none
   context if target() == "paged" { body } else {
-    if css != none { html.style(if css == auto { read("web.css") } else { css }) }
-    html.elem("header", attrs: (class: "article-header"), {
+    if css != none { html.style(if css == auto { _css() } else { css }) }
+    html.elem("header", attrs: (class: "article-header typst"), {
       if title != none { html.elem("h1", attrs: (class: "title"), title) }
-      if authors.len() > 0 { html.elem("ul", attrs: (class: "authors"), authors.map(_author-item).join()) }
+      if authors.len() > 0 { html.elem("ul", attrs: (class: "authors"), authors.map(_author-item.with(emails: emails)).join()) }
       if date != none { html.elem("p", attrs: (class: "date"), date) }
       if links.len() > 0 {
         html.elem("p", attrs: (class: "links"), links
@@ -522,7 +556,7 @@
       }
     })
     if toc != false { _toc(depth: if type(toc) == int { toc } else { 3 }) }
-    html.elem("main", attrs: (class: "article"), body)
+    html.elem("main", attrs: (class: "article typst"), body)
   }
 }
 
@@ -625,7 +659,7 @@
   let to(p) = _rel(path, p)
   let bare = (data-pagefind-ignore: "")
   html.script(_theme-script)
-  html.style(read("web.css") + site.at("css", default: ""))
+  html.style(_css() + site.at("css", default: ""))
   if "favicon" in site { html.link(rel: "icon", href: to(site.favicon)) }
   html.elem("header", attrs: (class: "topbar", ..bare), {
     html.elem("div", attrs: (class: "topbar-left"), {
@@ -655,17 +689,17 @@
 /// - site: dictionary shared by all pages: `title`, and optionally `home`
 ///   (path of the home page), `repo` (URL), `other-lang` (code of the other
 ///   language, built as a sibling site), `favicon` (path inside the site),
-///   `css` (extra CSS text appended to web.css).
+///   `css` (extra CSS text appended to the stylesheets).
 /// - sub: indent the entry in the navigation.
 /// - reset: content inserted first (counter resets).
 /// - chrome: `false` leaves the navigation out (EPUB, embedding).
 #let page(path, title: none, site: (:), sub: false, reset: none, chrome: true, body) = {
-  let inner = {
-    [#metadata((path: path, title: title, sub: sub))#_page-mark]
+  let inner(bundle) = {
+    [#metadata((path: path, title: title, sub: sub, bundle: bundle))#_page-mark]
     reset
     context if target() != "paged" {
       if chrome { _chrome(path, site) }
-      html.elem("main", attrs: (class: "content", data-pagefind-body: ""), body)
+      html.elem("main", attrs: (class: "content typst", data-pagefind-body: ""), body)
     } else { body }
   }
   context if target() == "bundle" {
@@ -673,11 +707,11 @@
     document(
       path,
       title: if title != none and site-title != none [#plain(title) — #site-title] else if title != none { plain(title) } else { site-title },
-      inner,
+      inner(true),
     )
   } else if target() == "html" {
-    html.elem("section", attrs: (class: "page", data-path: path), inner)
-  } else { inner }
+    html.elem("section", attrs: (class: "page", data-path: path), inner(false))
+  } else { inner(false) }
 }
 
 /// Emits web.js (and `extra`, a dictionary path -> data) as bundle assets. A

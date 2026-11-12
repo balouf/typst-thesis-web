@@ -1,0 +1,178 @@
+/* web-content.css — styles of what web.typ emits inside a document: equations,
+   drawings, figures, statements, notes, bibliography, parts of an article
+   header. Shipped with web.typ (same version, same folder); web.css holds the
+   page around it (typography, layouts, navigation).
+
+   Rules are scoped to a container of class "typst" with :where(), which adds
+   no specificity. web.typ puts the class on <main> and on the article header.
+   Another site (Sphinx, mdBook, ...) wraps the content it embeds in
+   <div class="typst"> and loads this file unchanged, after its theme.
+   Unscoped, because their names are specific enough: the endnotes (Typst puts
+   them after <main>) and the parts of .article-header.
+
+   Colors, fonts and the two theme switches are custom properties. web.css
+   sets them on a standalone page; a host site sets them on .typst:
+     --color-text  --color-text-muted  --color-bg  --color-sidebar-bg
+     --color-border  --color-border-strong  --color-link
+     --font-math  --font-heading
+     --box-fill-share   100% on a light page, 0% on a dark one
+     --frame-filter     none on a light page,
+                        invert(1) hue-rotate(180deg) on a dark one */
+
+/* ---------------------------------------------------------------------------
+   Text blocks
+   --------------------------------------------------------------------------- */
+
+:where(.typst) p { margin: 0 0 1em; }
+/* A bare <div> is a Typst block (a proof, a restated statement, ...). */
+:where(.typst) > div:not([class]) { margin: 1em 0; }
+/* Typst writes pixel sizes on <img> and em sizes on frame <svg>. */
+:where(.typst) img { max-width: 100%; height: auto; }
+
+/* ---------------------------------------------------------------------------
+   Mathematics (MathML)
+   --------------------------------------------------------------------------- */
+
+:where(.typst) math { font-family: var(--font-math); }
+:where(.typst) math[display="block"] { display: block math; margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+
+/* Numbered block equation: <div class="eq"><math/><div class="eq-num"/></div>.
+   Both share one grid cell: the equation is centered on the full width and the
+   number sits on the right, as in print. No track sizing is involved, which
+   browsers resolve differently for block math. */
+:where(.typst) .eq { display: grid; align-items: center; margin: 1em 0; }
+:where(.typst) .eq > * { grid-area: 1 / 1; }
+:where(.typst) .eq > :first-child { margin: 0; min-width: 0; padding-inline: 3.5em; }
+:where(.typst) .eq > .eq-num { justify-self: end; color: var(--color-text-muted); }
+
+/* ---------------------------------------------------------------------------
+   SVG frames (html.frame): drawings, grids, algorithms.
+   Black on transparent: a dark page inverts them.
+   --------------------------------------------------------------------------- */
+
+:where(.typst) svg {
+  max-width: 100%;
+  height: auto !important;
+  filter: var(--frame-filter);
+}
+:where(.typst) figure > svg, :where(.typst) > svg { margin-inline: auto; }
+/* A frame set as a block (a grid, a drawing) is spaced like a paragraph. */
+:where(.typst) svg[style*="display: block"] { margin-block: 1em; }
+:where(.typst) figure > svg[style*="display: block"] { margin-block: 0; }
+/* Photographs keep their colors inside a frame that a dark page inverts. */
+:where(.typst) svg image:is([*|href^="data:image/png"], [*|href^="data:image/jpeg"], [*|href^="data:image/gif"], [*|href^="data:image/webp"]) {
+  filter: var(--frame-filter);
+}
+/* PDF figures reach HTML as SVG data URIs, usually black on transparent. */
+:where(.typst) figure img[src^="data:image/svg+xml"] { filter: var(--frame-filter); }
+
+/* ---------------------------------------------------------------------------
+   Figures
+   --------------------------------------------------------------------------- */
+
+:where(.typst) figure { margin: 1.5em 0; text-align: center; }
+:where(.typst) figcaption { font-size: 0.9em; color: var(--color-text-muted); margin-top: 0.5em; text-align: left; hyphens: manual; }
+:where(.typst) .caption-label { font-weight: 600; color: var(--color-text); }
+
+/* ---------------------------------------------------------------------------
+   Theorem-like statements and boxes
+   .env  : a figure with a string kind and no caption (class env-KIND)
+   .box  : a Typst block with a fill or a stroke; colors come from Typst as
+           --box-fill / --box-stroke; a dark page tints with the stroke
+   --------------------------------------------------------------------------- */
+
+:where(.typst) .env {
+  margin: 1.2em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--color-border-strong);
+}
+:where(.typst) .env:has(> .box), :where(.typst) .env-plain { padding-left: 0; border-left: none; }
+
+:where(.typst) .box {
+  margin: 1em 0;
+  padding: 0.8em 1em;
+  border: 1px solid var(--box-stroke, transparent);
+  border-left-width: 4px;
+  border-radius: 4px;
+  --box-tint: color-mix(in srgb, var(--box-stroke, var(--box-fill, transparent)) 16%, var(--color-bg));
+  background: color-mix(in srgb, var(--box-fill, transparent) var(--box-fill-share), var(--box-tint));
+}
+:where(.typst) .env > .box { margin: 0; }
+:where(.typst) .env p:last-child, :where(.typst) .box p:last-child { margin-bottom: 0; }
+
+/* Emphasis around block content (an italic theorem body with paragraphs,
+   lists, displayed equations) is a <div>, kept in line with the head. */
+:where(.typst) div.em { display: inline; font-style: italic; }
+:where(.typst) div.strong { display: inline; font-weight: bold; }
+:where(.typst) div.em::before, :where(.typst) div.strong::before { content: " "; }
+:where(.typst) div.em > p:first-child, :where(.typst) div.strong > p:first-child { display: inline; }
+:where(.typst) div.em > p:first-child::after, :where(.typst) div.strong > p:first-child::after { content: ""; display: block; margin-bottom: 1em; }
+
+:where(.typst) ol.enum-custom { list-style: none; padding-left: 2.5em; }
+:where(.typst) ol.enum-custom > li > .enum-num { display: inline-block; min-width: 2em; margin-left: -2.5em; text-align: right; }
+
+/* Epigraph, drop cap and end-of-proof mark, for templates that tag them */
+:where(.typst) .epigraph { width: 55%; margin: 1em 0 1.5em auto; padding: 0; border-left: none; color: inherit; font-style: italic; font-size: 0.95em; }
+:where(.typst) .epigraph .epigraph-author { text-align: right; font-style: normal; margin-top: 0.3em; }
+:where(.typst) .epigraph .epigraph-author::before { content: "— "; }
+:where(.typst) .lettrine::first-letter { font-size: 2.5em; float: left; line-height: 1; margin-right: 2px; }
+:where(.typst) .qed { display: block; text-align: right; }
+@media (max-width: 600px) {
+  :where(.typst) .epigraph { width: 85%; }
+}
+
+/* ---------------------------------------------------------------------------
+   Notes and bibliography (roles emitted by Typst)
+   --------------------------------------------------------------------------- */
+
+section[role="doc-endnotes"] {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+}
+section[role="doc-endnotes"] ol { padding-left: 0; margin: 0; }
+section[role="doc-endnotes"] li { margin-bottom: 0.5em; }
+[role="doc-backlink"] { margin-right: 0.3em; }
+
+:where(.typst) section[role="doc-bibliography"] { font-size: 0.92em; }
+:where(.typst) section[role="doc-bibliography"] ul { padding-left: 0; }
+:where(.typst) section[role="doc-bibliography"] li { margin-bottom: 0.6em; }
+:where(.typst) section[role="doc-bibliography"] .prefix { margin-right: 0.5em; }
+
+/* ---------------------------------------------------------------------------
+   Parts of an article header (`article` in web.typ); its title and its place
+   on the page are in web.css
+   --------------------------------------------------------------------------- */
+
+.article-header .authors { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.5rem; }
+.article-header .authors .name { font-weight: 600; }
+.article-header .authors .affil { display: block; font-size: 0.9em; color: var(--color-text-muted); line-height: 1.4; }
+.article-header .orcid, .article-header .email {
+  font-family: var(--font-heading);
+  font-size: 0.7em;
+  vertical-align: 0.15em;
+  padding: 0 0.35em;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 1em;
+  color: var(--color-text-muted);
+}
+.article-header .orcid:hover, .article-header .email:hover { color: var(--color-link); text-decoration: none; }
+.article-header .date { color: var(--color-text-muted); }
+.article-header .links { display: flex; flex-wrap: wrap; gap: 0.5rem; text-align: left; }
+.article-header .links a {
+  padding: 0.25rem 0.8rem;
+  border: 1px solid var(--color-link);
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+}
+.article-header .links a:hover { background: var(--color-link); color: var(--color-bg); text-decoration: none; }
+.article-header .abstract { margin: 1.5rem 0 1rem; padding: 1rem 1.25rem; background: var(--color-sidebar-bg); border-radius: 6px; }
+.article-header .abstract h2 { font-size: 1rem; border: none; margin: 0 0 0.5rem; padding: 0; }
+.article-header .abstract p:last-child { margin-bottom: 0; }
+.article-header .keywords { font-size: 0.9em; text-align: left; color: var(--color-text-muted); }
+.article-header .meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.3em 1em; margin: 0 0 1rem; font-size: 0.9em; color: var(--color-text-muted); }
+.article-header .meta dt { font-weight: 600; }
+.article-header .meta dd { margin: 0; overflow-wrap: anywhere; }
