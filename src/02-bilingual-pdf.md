@@ -7,8 +7,8 @@ Typst project. If your thesis is monolingual, skip to
 
 ## Architecture: i18n.typ
 
-The bilingual system lives in `templates/i18n.typ` (included in the
-boilerplate). It defines two things:
+The bilingual system lives in `templates/i18n.typ` (see `examples/thesis`).
+It defines two things:
 
 ```typst
 #let lang = sys.inputs.at("lang", default: "fr")
@@ -91,8 +91,8 @@ In `main.typ`, switch between them:
 ```
 
 The key insight: **math, labels, figures, and references are the same in both
-files**. Only the surrounding prose changes. Compare the boilerplate's
-`example.typ` and `example.en.typ` to see this in practice.
+files**. Only the surrounding prose changes. Compare `example.typ` and
+`example.en.typ` in `examples/thesis/chapters` to see this in practice.
 
 ### Rule of thumb
 

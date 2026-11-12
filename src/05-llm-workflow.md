@@ -25,8 +25,8 @@ one of the highest-value uses of an LLM.
 
 CSS stylesheets, build scripts, GitHub Actions workflows, README files — all the
 infrastructure around the thesis content. These follow well-known patterns and an LLM can
-produce working versions quickly. The entire `style.css`, `nav.js`, `build.py`, and
-`deploy.yml` in the boilerplate were LLM-generated with iterative refinement.
+produce working versions quickly. The stylesheet, the scripts and the workflows of this
+repository were LLM-generated with iterative refinement.
 
 ### Adapting existing patterns
 
@@ -34,6 +34,28 @@ produce working versions quickly. The entire `style.css`, `nav.js`, `build.py`, 
 If you have one chapter converted and want to convert the next one in the same style, give
 the LLM both the source and the example output. It will replicate conventions (heading
 levels, label naming, theorem usage) accurately.
+
+### Porting a document to the web
+
+Writing the web entry file of an existing paper or thesis (see
+[HTML Export](03-html-export.md)) is a task an LLM does well, because the result can be
+checked mechanically. The loop that works:
+
+1. Give it the PDF entry file, the template, and `web.typ` (the layer documents itself
+   in its comments). Ask for a web entry file next to the PDF one, **without modifying
+   any section or chapter**.
+2. Have it run `uv run tools/check.py <entry> --json`. The report lists every element
+   Typst dropped, with file and line, the broken links, the invalid nesting, and a
+   census of headings, figures and equations against the source.
+3. Each item points at a rule of the template that needs to move (a layout rule applied
+   in the web entry, a rule declared on the wrong side of `web-rules`) or at a construct
+   to tag. Fix, run again, until the report is clean.
+4. Look at the page yourself. The check proves that the content is there, not that it
+   looks right.
+
+Two instructions save a lot of back and forth: "the PDF must not change" (compile it
+before and after with `SOURCE_DATE_EPOCH=0` and compare the files: Typst is
+deterministic), and "do not edit the vendored `web.typ`; if a rule is missing, say so".
 
 ## What Humans Must Do
 
@@ -116,11 +138,10 @@ accumulated errors is painful.
 For the HTML pipeline specifically, a useful shortcut is:
 
 ```bash
-uv run web/build.py --skip-pdf --skip-lang en --base-url /
+uv run web/build.py --lang fr --skip-pdf --skip-search
 ```
 
-This builds only the French HTML (skipping English and PDF), which is fast enough for
-iterative checking.
+This builds only the French site, which takes a second or two.
 
 ## Cost-Effective Split
 

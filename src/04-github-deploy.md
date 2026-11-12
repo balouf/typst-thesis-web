@@ -1,10 +1,10 @@
 # GitHub Deployment
 
-This chapter covers publishing your thesis website to GitHub Pages with automated builds.
+This chapter covers building a thesis site and publishing it to GitHub Pages on every
+push. A single-page paper needs none of this: `typst compile` writes one HTML file that
+you host wherever you like (see the end of this chapter).
 
 ## Repository Structure
-
-A typical repository layout:
 
 ```
 your-thesis/
@@ -12,23 +12,22 @@ your-thesis/
 ├── .gitignore
 ├── README.md
 ├── main.typ              # PDF entry point
-├── main-html.typ         # HTML entry point
-├── templates/            # Shared Typst templates
-├── chapters/             # Chapter source files (.typ)
-├── figures/              # Images and diagrams
+├── main-html.typ         # web entry point: one page(...) per chapter
+├── templates/            # your templates
+│   └── web/              # the web layer, vendored: web.typ, web.css, web.js
+├── chapters/             # chapter source files (.typ)
+├── figures/
 ├── web/
-│   ├── build.py          # Build script
-│   └── assets/
-│       ├── style.css
-│       ├── nav.js
-│       └── favicon.svg
-├── references.bib
-└── springer-lncs-alphabetical.csl
+│   ├── build.py          # runs the build commands
+│   └── assets/           # your own files: favicon.svg, extra CSS
+└── references.bib
 ```
 
-## .gitignore
+[`examples/thesis`](https://github.com/balouf/typst-thesis-web/tree/main/examples/thesis)
+has exactly this layout and builds as it is: copy it and follow the `TODO: adapt`
+comments.
 
-Essential entries to keep the repository clean:
+## .gitignore
 
 ```gitignore
 # Build output
@@ -37,9 +36,6 @@ web/dist/
 # PDFs (except figure PDFs)
 *.pdf
 !figures/**/*.pdf
-
-# Typst cache
-.typst-cache/
 
 # Python
 __pycache__/
@@ -50,34 +46,55 @@ __pycache__/
 Thumbs.db
 ```
 
-## deploy.yml
+## build.py
 
-The GitHub Actions workflow (provided in `boilerplate/deploy.yml`) automates the full
-build-and-deploy cycle. Key points:
-
-- **Triggers**: push to `main` and manual dispatch (`workflow_dispatch`).
-- **Permissions**: needs `pages: write` and `id-token: write` for GitHub Pages deployment.
-- **Steps**: checkout, install Typst (`typst-community/setup-typst@v4`), install uv
-  (`astral-sh/setup-uv@v5`), run `build.py`, upload artifact, deploy to Pages.
-
-Three settings deserve attention:
-
-**`--base-url`** is critical. GitHub Pages serves your site at
-`https://username.github.io/repo-name/`, so all asset paths (CSS, JS, Pagefind index)
-must be prefixed with `/repo-name/`. The build command in the workflow should read:
-
-```yaml
-run: uv run web/build.py --base-url /your-repo-name/
+```bash
+uv run web/build.py                       # everything
+uv run web/build.py --lang fr --skip-pdf  # quick loop on one language
 ```
 
-If you forget this, the site will load with no styles and broken search.
+The script runs, for each language:
 
-**`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`** is set as an environment variable to
-suppress Node.js deprecation warnings from older GitHub Actions.
+1. `typst compile --features html,bundle --format bundle --input lang=<lang> main-html.typ web/dist/<lang>`:
+   Typst writes the site, one HTML page per chapter;
+2. `typst compile --input lang=<lang> main.typ web/dist/pdf/thesis-<lang>.pdf`;
+3. [Pagefind](https://pagefind.app/), which indexes `web/dist/<lang>` for the search box.
 
-**`enable-cache: false`** on `setup-uv` is necessary because `build.py` uses inline
-script dependencies (the `# /// script` header) rather than a `uv.lock` file. With
-caching enabled, uv would look for a lock file and fail.
+It also writes `web/dist/index.html`, which sends visitors to their language, and it
+empties each language folder first: Typst never removes files from a bundle directory,
+so a renamed chapter would otherwise leave its old page online.
+
+That is all it does. It does not parse, split or rewrite HTML, and it holds no list of
+chapters: the pages are declared once, in `main-html.typ`. The two settings at the top
+are the list of languages and the name of the PDF (which `chapters/cover.typ` links to).
+
+The result:
+
+```
+web/dist/
+├── index.html            # language redirect
+├── fr/                   # a complete site: pages, assets/web.js, assets/pagefind/
+├── en/
+└── pdf/
+```
+
+Every link inside a language folder is relative, so the site works at any URL, in a
+sub-folder of GitHub Pages as well as from a local server. The search needs HTTP: to
+try it locally, run `python -m http.server -d web/dist` and open
+`http://localhost:8000`.
+
+## deploy.yml
+
+The workflow (in `examples/thesis/deploy.yml`, to be moved to
+`.github/workflows/deploy.yml`) checks out the repository, installs Typst and uv, runs
+`build.py` and publishes `web/dist`.
+
+- **Triggers**: push to `main` and manual dispatch.
+- **Permissions**: `pages: write` and `id-token: write`.
+- **Typst version**: pinned (`typst-version: '0.15.1'`). HTML export is experimental;
+  upgrade deliberately, and run `check.py` when you do.
+- **`enable-cache: false`** on `setup-uv`: `build.py` declares its dependencies inline
+  (the `# /// script` header) and there is no lock file for the cache to key on.
 
 ## Enabling GitHub Pages
 
@@ -87,14 +104,18 @@ Before the first deployment:
 2. Navigate to **Settings** > **Pages**.
 3. Under **Source**, select **GitHub Actions**.
 
-That is all. The workflow will handle the rest on the next push to `main`.
+The workflow handles the rest on the next push to `main`.
 
 ## Favicon
 
-Create a simple SVG favicon in `web/assets/`. The `<link rel="icon">` tag is generated
-by `build_page()` in `build.py`, pointing to `../assets/favicon.svg`.
+Put an SVG in `web/assets/` and declare it in `main-html.typ`:
 
-A minimal SVG with colored background and text initials works well:
+```typ
+#let site = (title: "...", favicon: "assets/favicon.svg")
+#site-assets(extra: ("assets/favicon.svg": read("web/assets/favicon.svg")))
+```
+
+A minimal one, with initials on a colored square:
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
@@ -105,37 +126,41 @@ A minimal SVG with colored background and text initials works well:
 </svg>
 ```
 
-Replace the initials and color to match your identity.
+## Checking in CI
 
-## README.md
+To fail the build when content is dropped, add a step before the build. It needs a
+copy of [`tools/check.py`](https://github.com/balouf/typst-thesis-web/tree/main/tools/check.py)
+in your repository (one file, standard library only):
 
-Include at minimum:
-
-- A "Read online" link: `https://username.github.io/repo-name/`
-- Build instructions for local development:
-  ```bash
-  uv run web/build.py --base-url /
-  open web/dist/index.html
-  ```
-- PDF compilation instructions:
-  ```bash
-  typst compile --input lang=fr main.typ thesis-fr.pdf
-  typst compile --input lang=en main.typ thesis-en.pdf
-  ```
-- License information (your thesis content license).
+```yaml
+- name: Check the web edition
+  run: |
+    uv run tools/check.py main-html.typ --format bundle --input lang=fr
+    uv run tools/check.py main-html.typ --format bundle --input lang=en
+```
 
 ## Deployment Checklist
 
-When setting up a new thesis repository:
-
-1. Copy the boilerplate files into your project.
-2. Edit `build.py`: set `CHAPTERS`, `PARTS`, `SUB_CHAPTERS`, `THESIS_TITLE`, and
-   `GITHUB_URL`.
-3. Edit `deploy.yml`: change `--base-url /your-repo-name/`.
-4. Create your `favicon.svg`.
-5. Push to `main` and verify the Actions tab shows a successful build.
-6. Visit `https://username.github.io/your-repo-name/` to confirm the site is live.
+1. Copy `examples/thesis` into your repository; move `deploy.yml` to
+   `.github/workflows/`.
+2. Edit `main-html.typ`: site title, repository URL, one `chapter(...)` per page.
+3. Edit `web/build.py` if your languages or PDF name differ.
+4. Add your `favicon.svg`.
+5. Enable GitHub Pages (source: GitHub Actions).
+6. Push to `main`, check the Actions tab, then visit
+   `https://username.github.io/your-repo-name/`.
 
 The reference projects [phd-pagerank](https://github.com/balouf/phd-pagerank) and
-[hdr-p2p](https://github.com/balouf/hdr-p2p) both follow this exact structure and can
-serve as working examples.
+[hdr-p2p](https://github.com/balouf/hdr-p2p) follow this structure.
+
+## Publishing a single-page paper
+
+`typst compile --features html web.typ paper.html` gives one file with everything
+inside. Typical homes for it:
+
+- next to the PDF, on your own page or a project site (a documentation site can copy
+  it as a static file);
+- GitHub Pages, as the only file of an artifact.
+
+If the sources are private (a paper under review, margin notes), build the page on
+your side and publish only the generated file.

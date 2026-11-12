@@ -1,8 +1,21 @@
 # Typst Thesis Web
 
-A guide and boilerplate for converting academic theses to [Typst](https://typst.app/) with bilingual PDF output, HTML website generation, and GitHub Pages deployment.
+A web edition for academic documents written in [Typst](https://typst.app/): a paper
+becomes one self-contained HTML page, a thesis becomes a searchable site, **without
+touching the sections**. Mathematics is native MathML.
 
 **[Read the guide](https://balouf.github.io/typst-thesis-web/)**
+
+The repository holds:
+
+- `lib/` — the web layer you copy into your project: `web.typ` (show rules and page
+  functions), `web.css`, and `web.js` for multi-page sites;
+- `tools/check.py` — compiles a web edition and reports what did not reach the HTML;
+- `examples/` — a paper and a bilingual thesis, ready to copy;
+- `src/` — the guide, which also covers LaTeX conversion, bilingual PDF output and
+  GitHub Pages deployment.
+
+It targets **Typst 0.15.1**. HTML export is still experimental in Typst: pin the version.
 
 ## Live examples
 
@@ -11,14 +24,36 @@ A guide and boilerplate for converting academic theses to [Typst](https://typst.
 
 ## Quick start
 
-1. Copy the `boilerplate/` directory as your new project
-2. Edit `templates/meta-data.typ` with your thesis metadata
-3. Replace `chapters/example.typ` with your own chapters
-4. Update `CHAPTERS` and `PARTS` in `web/build.py`
-5. Run `typst compile main.typ` for PDF, `uv run web/build.py` for the website
+### A paper, as one page
 
-See the [guide](https://balouf.github.io/typst-thesis-web/) for detailed instructions on each step.
+1. Copy `lib/web.typ` and `lib/web.css` into a `web/` folder of your project.
+2. Write a `web.typ` entry next to your PDF entry file, on the model of
+   [`examples/article/web.typ`](examples/article/web.typ): your content rules, then
+   `#show: web-rules`, then `#show: article.with(...)`, then the same `#include`s.
+3. Compile and check:
+
+   ```bash
+   typst compile --features html web.typ paper.html
+   uv run tools/check.py web.typ
+   ```
+
+### A thesis, as a site
+
+1. Copy [`examples/thesis`](examples/thesis) as your new project.
+2. Edit `templates/meta-data.typ`, replace the chapters, and list your pages in
+   `main-html.typ` (one `chapter(...)` per page).
+3. Run `typst compile main.typ` for the PDF, `uv run web/build.py` for the site.
+
+The [guide](https://balouf.github.io/typst-thesis-web/) explains each step, and the one
+rule that matters: the order of the show rules in a web entry file.
+
+## Development
+
+```bash
+uv run --with pytest pytest -q   # compiles the examples and checks their output
+uv run tools/sync.py             # refreshes the copies of lib/ kept in examples/
+```
 
 ## License
 
-Guide and boilerplate are licensed under the [MIT License](LICENSE).
+Guide, layer, tools and examples are licensed under the [MIT License](LICENSE).

@@ -11,9 +11,9 @@ There are several good reasons to move from LaTeX to Typst:
 - **Bit rot.** Old LaTeX sources often stop compiling after a few years --
   packages vanish, engines change, build toolchains break. Typst is a single
   binary with no dependency hell.
-- **HTML export.** Typst >= 0.12 has native HTML output. LaTeX-to-HTML
-  pipelines (tex4ht, LaTeXML, Pandoc) are fragile and rarely produce clean
-  results.
+- **HTML export.** Typst exports HTML natively, with the mathematics as MathML
+  (experimental; this guide targets Typst 0.15). LaTeX-to-HTML pipelines
+  (tex4ht, LaTeXML, Pandoc) are fragile and rarely produce clean results.
 - **Modern tooling.** Incremental compilation, built-in package manager,
   readable error messages, and a scripting language that feels closer to Python
   than TeX macros.
@@ -27,8 +27,8 @@ is worthwhile when you want to maintain, extend, or republish the thesis.
 Do not try to convert the entire thesis in one pass. Work incrementally:
 
 1. **Create the skeleton.** Set up `main.typ` with page layout, fonts, and
-   imports. The boilerplate's `main.typ` is a good starting point. Get it to
-   compile (even if empty).
+   imports. The `main.typ` of `examples/thesis` is a good starting point. Get it
+   to compile (even if empty).
 
 2. **Convert one chapter at a time.** Pick the simplest chapter first to
    establish patterns. Copy the LaTeX source into a `.typ` file, convert the
@@ -125,7 +125,7 @@ Download the right one from the
 French text contains ligatures like "œuvre" or "nœud". LaTeX handles these
 through font ligatures, but Typst needs the actual Unicode characters.
 
-The boilerplate defines shorthand variables in `prelude.typ`:
+`examples/thesis` defines shorthand variables in `templates/prelude.typ`:
 
 ```typst
 #let oe = "œ"
