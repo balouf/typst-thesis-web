@@ -31,7 +31,7 @@ EXAMPLES = {
     "torture": (
         ".",
         ["examples/torture/web.typ", "--root", "."],
-        {"headings": 6, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 9, "block-equations": 4,
+        {"headings": 6, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
          "numbered-equations": 3, "inline-equations": 6, "footnotes": 1, "citations": 2},
     ),
     "thesis-fr": (

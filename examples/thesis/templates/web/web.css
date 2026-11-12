@@ -170,6 +170,13 @@ main svg, .article-header svg {
   filter: var(--frame-filter);
 }
 figure > svg, main > svg { margin-inline: auto; }
+/* A frame set as a block (a grid, a drawing) is spaced like a paragraph. */
+main svg[style*="display: block"] { margin-block: 1em; }
+figure > svg[style*="display: block"] { margin-block: 0; }
+/* Photographs keep their colors inside a frame that a dark page inverts. */
+main svg image:is([*|href^="data:image/png"], [*|href^="data:image/jpeg"], [*|href^="data:image/gif"], [*|href^="data:image/webp"]) {
+  filter: var(--frame-filter);
+}
 
 /* PDF figures reach HTML as SVG data URIs, usually black on transparent. */
 :root[data-theme="dark"] figure img[src^="data:image/svg+xml"] { filter: invert(1) hue-rotate(180deg); }

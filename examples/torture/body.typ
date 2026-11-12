@@ -90,6 +90,10 @@ A bare canvas, outside any figure:
 
 #canvas({ draw.rect((0, 0), (2, 1)) })
 
+An overlay, one drawing placed on another: the frame covers the mark that sticks out.
+
+#box[#rect(width: 2cm, height: 1cm, fill: aqua)#place(top + right, dx: 3mm, dy: -3mm, circle(radius: 2mm, fill: red))]
+
 A fletcher diagram:
 
 #diagram(node((0, 0), $A$), edge("->"), node((1, 0), $B$))

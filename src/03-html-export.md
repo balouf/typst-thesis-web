@@ -118,6 +118,7 @@ inside an SVG frame either (frames are laid out as paged content).
 | `h` | a space (left alone inside equations) |
 | `v`, `pagebreak`, `colbreak`, `hide` | nothing |
 | `grid`, shapes, transforms, `layout` callbacks, fixed-size boxes and blocks | an inline SVG (this covers cetz, fletcher, droplet) |
+| a `box` that holds a `place` (one drawing set on another) | one SVG, sized to cover what sticks out of the box |
 | `heading` | a real `<h1>`–`<h6>` with its number, whatever the template did |
 | `figure` with a string `kind` and no caption | a statement: `<div class="env env-KIND">` |
 | `figure` whose kind is in `frame-kinds` (`"algorithm"`) | an SVG with its caption |
@@ -281,7 +282,8 @@ entry file (which is all `set text(font: ...)` is used for in a web entry).
 paragraph, a grid with `1fr` columns) needs a width: the layer measures the content and
 caps it at `frame-width`.
 
-Frames are black on transparent, so the dark theme inverts them.
+Frames are black on transparent, so the dark theme inverts them; the photographs they
+contain (PNG, JPEG) are inverted back and keep their colors.
 
 ## Checking that nothing was lost
 
@@ -361,3 +363,5 @@ checkout of this repository:
 ```bash
 uv run tools/sync.py path/to/your/project/templates/web
 ```
+
+A copy whose header lists local patches is left alone; `--force` overwrites it.

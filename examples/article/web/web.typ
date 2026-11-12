@@ -1,6 +1,6 @@
 // web.typ — web export layer (HTML and bundle targets) for Typst documents.
 // Source: https://github.com/balouf/typst-thesis-web (MIT)
-// Version 0.2.0 (2026-11-12), checked with Typst 0.15.1.
+// Version 0.2.1 (2026-11-12), checked with Typst 0.15.1.
 // Vendored copy: keep it unmodified and list local patches below.
 //   Local patches: none.
 // Ships with web.css (and web.js for multi-page sites): keep them next to this file.
@@ -22,7 +22,7 @@
   message: "web.typ needs Typst 0.15 or later",
 )
 
-#let web-version = version(0, 2, 0)
+#let web-version = version(0, 2, 1)
 
 // -----------------------------------------------------------------------------
 // Guards and small helpers
@@ -140,6 +140,42 @@
 // with a zero ratio, depending on the element).
 #let _fixed(x) = type(x) == length or (type(x) == relative and x.ratio == 0%)
 
+// The `place` elements some content holds, looking through sequences and
+// styles only. A `box` that holds one is an overlay (one drawing set on
+// another): its meaning is positional, so it is drawn as a whole.
+#let _places(c, depth: 4) = {
+  if type(c) != content or depth == 0 { return () }
+  if c.func() == place { return (c,) }
+  let f = c.fields()
+  if "children" in f { f.children.map(k => _places(k, depth: depth - 1)).flatten() }
+  else if "child" in f { _places(f.child, depth: depth - 1) }
+  else { () }
+}
+
+// An overlay box, padded by what its placed content sticks out of it, so that
+// the frame covers everything it draws. Placed content with no vertical
+// alignment sits at its position in the flow and is left out of the estimate.
+#let _overlay(it) = context {
+  let (width: w, height: h) = measure(it)
+  let abs(x, whole) = if type(x) == relative { x.length.to-absolute() + x.ratio * whole } else { x.to-absolute() }
+  let out = (left: 0pt, right: 0pt, top: 0pt, bottom: 0pt)
+  for p in _places(it.body) {
+    // Only the fields written in the source are known on an element at this point.
+    let s = measure(p.body)
+    let a = p.at("alignment", default: start)
+    if a == auto { a = start }
+    let x = abs(p.at("dx", default: 0pt), w) + if a.x == center { (w - s.width) / 2 } else if a.x in (right, end) { w - s.width } else { 0pt }
+    out.left = calc.max(out.left, -x)
+    out.right = calc.max(out.right, x + s.width - w)
+    if a.y != none {
+      let y = abs(p.at("dy", default: 0pt), h) + if a.y == horizon { (h - s.height) / 2 } else if a.y == bottom { h - s.height } else { 0pt }
+      out.top = calc.max(out.top, -y)
+      out.bottom = calc.max(out.bottom, y + s.height - h)
+    }
+  }
+  pad(..out, it)
+}
+
 #let _box-style(it) = {
   let parts = ()
   let fill = _paint(it.fill)
@@ -158,7 +194,8 @@
 }
 
 /// What has no HTML equivalent is rendered as SVG: grids, shapes, transforms,
-/// `layout` callbacks (fletcher, droplet) and fixed-size blocks/boxes (cetz).
+/// `layout` callbacks (fletcher, droplet), fixed-size blocks/boxes (cetz) and
+/// boxes that hold a `place` (overlays).
 /// Colored blocks hand their colors to the stylesheet as CSS variables.
 #let frame-rules(width: 45em, body) = {
   let framed(it) = on-web(it, it => frame(it, width: width))
@@ -181,7 +218,9 @@
     }
   })
   show box: it => on-web(it, it => {
-    if _fixed(it.width) and _fixed(it.height) { box(html.frame(it)) } else { it }
+    if _fixed(it.width) and _fixed(it.height) { box(html.frame(it)) }
+    else if _places(it.body).len() > 0 { box(frame(_overlay(it), width: width)) }
+    else { it }
   })
   body
 }
