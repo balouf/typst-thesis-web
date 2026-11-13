@@ -1,7 +1,7 @@
 /* web-content.css — styles of what web.typ emits inside a document: equations,
-   drawings, figures, statements, notes, bibliography, parts of an article
-   header. Shipped with web.typ (same version, same folder); web.css holds the
-   page around it (typography, layouts, navigation).
+   drawings, figures, statements, algorithms, notes, bibliography, parts of an
+   article header. Shipped with web.typ (same version, same folder); web.css
+   holds the page around it (typography, layouts, navigation).
 
    Rules are scoped to a container of class "typst" with :where(), which adds
    no specificity. web.typ puts the class on <main> and on the article header.
@@ -120,6 +120,34 @@
 :where(.typst) .qed { display: block; text-align: right; }
 @media (max-width: 600px) {
   :where(.typst) .epigraph { width: 85%; }
+}
+
+/* ---------------------------------------------------------------------------
+   Algorithms set as text (`algo-lines` in web.typ): a table of one row per
+   line. The line is a .algo-line whose class gives its indent level; the
+   guides are 1px backgrounds, one per level. A cell before the line holds its
+   number, a cell after it its comment.
+   --------------------------------------------------------------------------- */
+
+:where(.typst) .algo { text-align: left; hyphens: manual; }
+:where(.typst) .algo table { border-collapse: collapse; margin: 0; font-size: inherit; }
+:where(.typst) .algo td { border: none; padding: 0; vertical-align: baseline; background: none; }
+:where(.typst) .algo td:has(~ td > .algo-line) { padding-right: 0.8em; text-align: right; color: var(--color-text-muted); }
+:where(.typst) .algo td:has(> .algo-line) ~ td { padding-left: 1.5em; color: var(--color-text-muted); white-space: nowrap; }
+:where(.typst) .algo-line {
+  --algo-guide: linear-gradient(var(--color-border-strong), var(--color-border-strong));
+  padding-block: 0.18em;
+}
+:where(.typst) .algo-line p { margin: 0; }
+:where(.typst) .algo-line ul, :where(.typst) .algo-line ol { margin: 0.2em 0; }
+:where(.typst) .algo-l1 { padding-left: 1.4em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat; }
+:where(.typst) .algo-l2 { padding-left: 2.8em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat, var(--algo-guide) 1.4em 0 / 1px 100% no-repeat; }
+:where(.typst) .algo-l3 { padding-left: 4.2em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat, var(--algo-guide) 1.4em 0 / 1px 100% no-repeat, var(--algo-guide) 2.8em 0 / 1px 100% no-repeat; }
+:where(.typst) .algo-l4 { padding-left: 5.6em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat, var(--algo-guide) 1.4em 0 / 1px 100% no-repeat, var(--algo-guide) 2.8em 0 / 1px 100% no-repeat, var(--algo-guide) 4.2em 0 / 1px 100% no-repeat; }
+:where(.typst) .algo-l5 { padding-left: 7.0em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat, var(--algo-guide) 1.4em 0 / 1px 100% no-repeat, var(--algo-guide) 2.8em 0 / 1px 100% no-repeat, var(--algo-guide) 4.2em 0 / 1px 100% no-repeat, var(--algo-guide) 5.6em 0 / 1px 100% no-repeat; }
+:where(.typst) .algo-l6 { padding-left: 8.4em; background: var(--algo-guide) 0 0 / 1px 100% no-repeat, var(--algo-guide) 1.4em 0 / 1px 100% no-repeat, var(--algo-guide) 2.8em 0 / 1px 100% no-repeat, var(--algo-guide) 4.2em 0 / 1px 100% no-repeat, var(--algo-guide) 5.6em 0 / 1px 100% no-repeat, var(--algo-guide) 7.0em 0 / 1px 100% no-repeat; }
+@media (max-width: 600px) {
+  :where(.typst) .algo td:has(> .algo-line) ~ td { white-space: normal; }
 }
 
 /* ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@
 #show: thmrules
 #show: web-rules.with(
   heading-offset: 0, // a chapter title is the <h1> of its page
+  frame-kinds: (), // algorithms are text, not drawings (templates/algorithms.typ)
   heading-number: (it, n) => if it.level == 1 [#t([Chapitre], [Chapter]) #n — ] else [#n ],
 )
 #show: chapter-counters

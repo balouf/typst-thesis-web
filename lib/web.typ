@@ -1,6 +1,6 @@
 // web.typ — web export layer (HTML and bundle targets) for Typst documents.
 // Source: https://github.com/balouf/typst-thesis-web (MIT)
-// Version 0.4.1 (2026-11-13), checked with Typst 0.15.1.
+// Version 0.5.0 (2026-11-13), checked with Typst 0.15.1.
 // Vendored copy: keep it unmodified and list local patches below.
 //   Local patches: none.
 // Ships with web-content.css, web.css (and web.js for multi-page sites, epub.py
@@ -23,7 +23,7 @@
   message: "web.typ needs Typst 0.15 or later",
 )
 
-#let web-version = version(0, 4, 1)
+#let web-version = version(0, 5, 0)
 
 // -----------------------------------------------------------------------------
 // Guards and small helpers
@@ -389,8 +389,30 @@
   body
 }
 
+/// An algorithm as text instead of a drawing, for packages that set each line
+/// in a `box` holding a `pad` (its indent) and draw the indent guides, as
+/// `algo` does. Each line becomes `<div class="algo-line algo-lN">`, N being
+/// its left padding counted in `indent`s (the indent size given to the
+/// package); the boxes are opened and the drawn guides dropped, the stylesheet
+/// draws its own. Identity in PDF.
+///
+/// Wrap the call to the package in it, and take the kind of these figures out
+/// of `frame-kinds`: `#show: web-rules.with(frame-kinds: ())`.
+#let algo-lines(indent: 20pt, body) = context if target() == "paged" { body } else {
+  html.elem("div", attrs: (class: "algo"), {
+    show line: none
+    show box: it => it.body
+    show pad: it => context {
+      let level = calc.round(it.left.length.to-absolute() / indent.to-absolute())
+      html.elem("div", attrs: (class: "algo-line algo-l" + str(calc.clamp(level, 0, 6))), it.body)
+    }
+    body
+  })
+}
+
 /// Smaller fixes: page references (an error in HTML), custom enum numbering
-/// (lost in a plain `<ol>`), emphasis around block content (invalid nesting).
+/// (lost in a plain `<ol>`), emphasis around block content or inside an
+/// equation (invalid nesting), `strong` with a zero delta (not strong).
 #let text-rules(body) = {
   show ref.where(form: "page"): it => on-web(it, _ => none)
   show enum: it => on-web(it, it => {
@@ -409,11 +431,18 @@
       }
     })
   })
+  // Inside an equation (a show rule on text reaches the text of equations too),
+  // emphasis is a math style: an HTML element is not valid in MathML.
   show emph: it => on-web(it, it => {
-    if _contains(it.body, _is-blocky) { html.elem("div", attrs: (class: "em"), it.body) } else { it }
+    if math.equation.supplement == _math-marker { math.italic(it.body) }
+    else if _contains(it.body, _is-blocky) { html.elem("div", attrs: (class: "em"), it.body) }
+    else { it }
   })
   show strong: it => on-web(it, it => {
-    if _contains(it.body, _is-blocky) { html.elem("div", attrs: (class: "strong"), it.body) } else { it }
+    if it.delta == 0 { it.body } // `set strong(delta: 0)` switches it off
+    else if math.equation.supplement == _math-marker { math.bold(it.body) }
+    else if _contains(it.body, _is-blocky) { html.elem("div", attrs: (class: "strong"), it.body) }
+    else { it }
   })
   body
 }

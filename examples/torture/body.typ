@@ -39,6 +39,9 @@ Text under the sub-heading.
 
 Inline $a quad b thin c$ and $overline(A) = A + underline(s)$.
 
+A show rule on text reaches the text of an equation: #[#show "kept": strong; $x "kept" y$].
+Strong text that is switched off is plain: #[#set strong(delta: 0); *unstressed*].
+
 $ E = m c^2 $ <eq:einstein>
 
 $ f(x) &= sum_(k=0)^n binom(n, k) x^k \

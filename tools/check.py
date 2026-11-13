@@ -13,7 +13,8 @@ The script compiles the entry (HTML or bundle) and reports, in order of trust:
    it ignores. Elements that carry content are errors, pure spacing is benign;
 2. integrity of the HTML: internal links without a target, duplicate ids,
    empty anchored blocks (a dropped figure leaves `<div id=...></div>`), block
-   elements nested in inline ones, collapsed SVG frames;
+   elements nested in inline ones, HTML elements inside an equation,
+   collapsed SVG frames;
 3. a census: headings, figures, equations, notes counted in the Typst document
    (`typst eval`) and in the HTML. What sits inside an SVG frame or is repeated
    in a table of contents is counted on the Typst side only, so the HTML may be
@@ -157,6 +158,8 @@ class Page(HTMLParser):
         in_math = self._inside({"math"})
         if self.stack:
             self.stack[-1]["content"] = True
+        if in_math and (tag in INLINE or tag in BLOCK):
+            self.nesting[f"<{tag}> inside <math>"] += 1  # not valid MathML: an EPUB is refused for it
 
         if "id" in a:
             self.ids.append((a["id"], in_svg or tag == "svg"))

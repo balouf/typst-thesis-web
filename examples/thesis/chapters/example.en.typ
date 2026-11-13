@@ -29,3 +29,13 @@ $ sum_(k=0)^n k = n(n+1) / 2 $ <eq:gauss>
 
 As shown in @fig:example, we can reference figures, theorems
 (@thm:example), and equations (@eq:gauss) in the standard way.
+
+An algorithm is written line by line (@alg:gcd).
+
+#alg(caption: [Euclid's algorithm.])[
+  while $b != 0$ #i #comment[invariant: the gcd of $a$ and $b$]\
+    if $a < b$ then #i\
+      swap $a$ and $b$ #d\
+    $(a, b) <- (b, a mod b)$ #d\
+  return $a$
+] <alg:gcd>

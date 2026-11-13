@@ -41,19 +41,19 @@ EXAMPLES = {
         ".",
         ["examples/torture/web.typ", "--root", "."],
         {"headings": 10, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
-         "numbered-equations": 3, "inline-equations": 6, "footnotes": 1, "citations": 2},
+         "numbered-equations": 3, "inline-equations": 7, "footnotes": 1, "citations": 2},
     ),
     "thesis-fr": (
         "examples/thesis",
         ["main-html.typ", "--format", "bundle", "--input", "lang=fr"],
-        {"headings": 5, "statements": 3, "html-figures": 1, "captions": 1, "svg-frames": 1, "block-equations": 2,
-         "numbered-equations": 2, "inline-equations": 4, "footnotes": 2, "citations": 2},
+        {"headings": 5, "statements": 3, "html-figures": 2, "captions": 2, "svg-frames": 1, "block-equations": 2,
+         "numbered-equations": 2, "inline-equations": 12, "footnotes": 2, "citations": 2},
     ),
     "thesis-en": (
         "examples/thesis",
         ["main-html.typ", "--format", "bundle", "--input", "lang=en"],
-        {"headings": 5, "statements": 3, "html-figures": 1, "captions": 1, "svg-frames": 1, "block-equations": 2,
-         "numbered-equations": 2, "inline-equations": 4, "footnotes": 2, "citations": 2},
+        {"headings": 5, "statements": 3, "html-figures": 2, "captions": 2, "svg-frames": 1, "block-equations": 2,
+         "numbered-equations": 2, "inline-equations": 12, "footnotes": 2, "citations": 2},
     ),
 }
 
@@ -102,6 +102,10 @@ def test_thesis_site_pages(tmp_path: Path):
     assert 'href="example.html#thm-example"' in second  # a label becomes a stable anchor
     assert 'href="../en/second.html"' in second  # language switch
     assert '<li class="active"><a href="second.html">' in second
+    example = (out / "example.html").read_text(encoding="utf-8")
+    algorithm = example[example.index('id="alg-gcd"'):example.index("</figure>", example.index('id="alg-gcd"'))]
+    assert '<div class="algo">' in algorithm and "<svg" not in algorithm  # text, not a drawing
+    assert [algorithm.count(f'class="algo-line algo-l{n}"') for n in range(3)] == [2, 2, 1]  # indent levels
 
 
 def test_heading_ids_and_emails(tmp_path: Path):
@@ -115,6 +119,9 @@ def test_heading_ids_and_emails(tmp_path: Path):
     assert 'id="headings-without-a-label"' in page  # from the text
     assert 'id="further-reading"' in page and 'id="further-reading-2"' in page  # same text twice
     assert 'id="erdos-renyi-graphs"' in page  # any accented letter keeps its base
+    equations = re.findall(r"<math\b.*?</math>", re.sub(r"<style>.*?</style>", "", page, flags=re.S), re.S)
+    assert not [e for e in equations if "<strong" in e]  # bold math, not <strong>, in an equation
+    assert "unstressed" in page and "<strong>unstressed" not in page  # strong(delta: 0) is plain
     assert "mailto:ada@example.org" in page
     done = run([*cmd, "--input", "emails=false", str(out)], ".")
     assert done.returncode == 0, done.stderr
