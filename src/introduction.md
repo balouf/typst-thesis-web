@@ -62,8 +62,10 @@ lib/                    # the web layer: copy these into your project
   web-content.css       #   styles of what a document contains
   web.css               #   the page around it, light and dark
   web.js                #   sites only: theme toggle, search, small screens
+  epub.py               #   optional: the web edition as an EPUB book
 tools/
   check.py              # did anything get lost on the way to HTML?
+  head.py               # optional: styles and metadata moved to <head>
   sync.py               # refresh a vendored copy of lib/
 examples/
   article/              # a paper: PDF and one web page
@@ -90,11 +92,11 @@ The `i18n.typ` architecture: the `#t()` function, when to use it vs. separate
 
 **[Section 3 -- HTML Export](03-html-export.md)**
 What Typst's HTML export does and what it drops, the web entry file and the
-order of its rules, a paper as one page, a thesis as a site, and how to check
-the result.
+order of its rules, a paper as one page, a thesis as a site, how to check the
+result, and the same output as an EPUB book.
 
 **[Section 4 -- GitHub Deployment](04-github-deploy.md)**
-Building a thesis site (languages, PDFs, search index) and publishing it to
+Building a thesis site (languages, PDFs, EPUBs, search index) and publishing it to
 GitHub Pages automatically.
 
 **[Section 5 -- Working with an LLM](05-llm-workflow.md)**

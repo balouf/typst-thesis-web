@@ -14,7 +14,7 @@ your-thesis/
 ├── main.typ              # PDF entry point
 ├── main-html.typ         # web entry point: one page(...) per chapter
 ├── templates/            # your templates
-│   └── web/              # the web layer, vendored: web.typ, web-content.css, web.css, web.js
+│   └── web/              # the web layer, vendored: web.typ, its stylesheets, web.js, epub.py
 ├── chapters/             # chapter source files (.typ)
 ├── figures/
 ├── web/
@@ -58,15 +58,20 @@ The script runs, for each language:
 1. `typst compile --features html,bundle --format bundle --input lang=<lang> main-html.typ web/dist/<lang>`:
    Typst writes the site, one HTML page per chapter;
 2. `typst compile --input lang=<lang> main.typ web/dist/pdf/thesis-<lang>.pdf`;
-3. [Pagefind](https://pagefind.app/), which indexes `web/dist/<lang>` for the search box.
+3. `templates/web/epub.py`, which packages `web/dist/<lang>` as
+   `web/dist/epub/thesis-<lang>.epub`, with the first page of the PDF as its cover
+   (see [An EPUB edition](03-html-export.md#an-epub-edition));
+4. [Pagefind](https://pagefind.app/), which indexes `web/dist/<lang>` for the search box.
 
 It also writes `web/dist/index.html`, which sends visitors to their language, and it
 empties each language folder first: Typst never removes files from a bundle directory,
 so a renamed chapter would otherwise leave its old page online.
 
 That is all it does. It does not parse, split or rewrite HTML, and it holds no list of
-chapters: the pages are declared once, in `main-html.typ`. The two settings at the top
-are the list of languages and the name of the PDF (which `chapters/cover.typ` links to).
+chapters: the pages are declared once, in `main-html.typ`. The settings at the top are
+the list of languages and the names of the PDF and of the EPUB (which
+`chapters/cover.typ` links to). `--skip-pdf`, `--skip-epub` and `--skip-search` leave
+a step out.
 
 The result:
 
@@ -75,7 +80,8 @@ web/dist/
 ├── index.html            # language redirect
 ├── fr/                   # a complete site: pages, assets/web.js, assets/pagefind/
 ├── en/
-└── pdf/
+├── pdf/
+└── epub/
 ```
 
 Every link inside a language folder is relative, so the site works at any URL, in a
@@ -146,7 +152,7 @@ in your repository (one file, standard library only):
 1. Copy `examples/thesis` into your repository; move `deploy.yml` to
    `.github/workflows/`.
 2. Edit `main-html.typ`: site title, repository URL, one `chapter(...)` per page.
-3. Edit `web/build.py` if your languages or PDF name differ.
+3. Edit `web/build.py` if your languages or the names of the PDF and EPUB differ.
 4. Add your `favicon.svg`.
 5. Enable GitHub Pages (source: GitHub Actions).
 6. Push to `main`, check the Actions tab, then visit

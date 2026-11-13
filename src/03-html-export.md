@@ -5,7 +5,7 @@ to get a web edition of a paper (one self-contained page) or of a thesis (one pa
 chapter) **without touching the sections or chapters**, and how to check that nothing
 was lost on the way.
 
-Everything rests on four files that you copy into your project, and one script:
+Everything rests on a few files that you copy into your project, and on two scripts:
 
 | File | Role |
 |------|------|
@@ -13,7 +13,9 @@ Everything rests on four files that you copy into your project, and one script:
 | `web-content.css` | Styles of what a document contains: equations, drawings, figures, statements, notes. |
 | `web.css` | The page around it, light and dark: typography, layouts, navigation. |
 | `web.js` | Multi-page sites only: theme toggle, search, navigation on small screens. |
+| `epub.py` | Optional: packages a web edition as an EPUB book. |
 | `tools/check.py` | Compiles a web edition and reports what did not make it to HTML. |
+| `tools/head.py` | Optional: moves styles and metadata from `<body>` to `<head>`. |
 
 They live in [`lib/`](https://github.com/balouf/typst-thesis-web/tree/main/lib) and
 [`tools/`](https://github.com/balouf/typst-thesis-web/tree/main/tools) of this
@@ -149,7 +151,7 @@ Parameters, all optional:
   frame-kinds: ("algorithm",),    // figure kinds rendered as SVG
   env-kinds: ("thmenv",),         // figure kinds that are statements even with a caption
   number-equations: true,
-  svg-math: (math.cancel,),       // math functions that send an equation to SVG
+  svg-math: (math.cancel,),       // math functions that send an equation to SVG; `true`: all equations
   tame-delimiters: true,
 )
 ```
@@ -252,7 +254,7 @@ A large chapter can be several pages (give each section its own `page`, the sub-
 with `sub: true`) while the PDF keeps it as one chapter.
 
 The site needs a few more steps around the Typst compilation: one bundle per language,
-the PDFs, a search index. [`web/build.py`](https://github.com/balouf/typst-thesis-web/tree/main/examples/thesis/web/build.py)
+the PDFs, the EPUBs, a search index. [`web/build.py`](https://github.com/balouf/typst-thesis-web/tree/main/examples/thesis/web/build.py)
 runs them; it only runs commands and never touches the HTML. See
 [GitHub Deployment](04-github-deploy.md).
 
@@ -396,6 +398,60 @@ html[data-theme="dark"] .typst {
 Headings, links, tables and code keep the style of the host. No converter ships with the
 layer: how a host wants its headings and its table of contents is its own business.
 
+## An EPUB edition
+
+The same output makes a book for reading apps and e-readers. `epub.py`, kept next to
+the stylesheets, packages what Typst wrote, a page or the folder of a bundle:
+
+```bash
+uv run web/epub.py paper.html -o paper.epub
+uv run templates/web/epub.py web/dist/en -o thesis.epub --cover cover.png
+```
+
+Each HTML page becomes a chapter. The script works on the files a website serves: there
+is no third entry file, and nothing to change in the document.
+
+- **Content only.** Scripts, styles, the navigation of a site and the table of contents
+  of an article are left out: a reading app has its own. Give the class `web-only` to
+  whatever else belongs to the website alone, such as the download buttons of a cover
+  page (`tag("web-only", ...)`).
+- **Order and table of contents** come from the navigation of the site (parts, pages,
+  sub-pages) and from the headings. `--toc-depth` sets how many levels of headings are
+  listed under each chapter.
+- **Valid XHTML.** Typst names a glyph after its outline, so the drawings of a page
+  define the same ids several times, which an EPUB forbids: they are made unique.
+  Images inlined as data URIs become files of the book, which shrinks it: the 19 MB of
+  pages of a thesis with many figures give a 3.8 MB book.
+- **Links** between chapters follow them. A relative link to a file that is not in the
+  book (a PDF next to the site) loses its target, or becomes absolute with
+  `--base-url https://.../en/`.
+- **Colors belong to the reading app**, in its day, sepia or night theme: the book sets
+  no text or page color. A drawing in black only takes the color of the text; a drawing
+  in colors keeps them, on a white ground; a colored block keeps a tint of its color
+  and gets a border.
+- **Metadata.** Title, authors (`set document(author: ...)`), keywords and language are
+  read from the pages; `--title`, `--author`, `--lang`, `--date` and `--identifier` (a
+  DOI, a URL) override them. `--cover` takes a PNG or JPEG image for the library of the
+  reading app. The first page of the PDF edition does well:
+
+  ```bash
+  typst compile --pages 1 --ppi 100 main.typ cover.png
+  ```
+
+With `SOURCE_DATE_EPOCH` set, the same input gives the same file, byte for byte.
+Validate a book with [EPUBCheck](https://www.w3.org/publishing/epubcheck/)
+(`java -jar epubcheck.jar thesis.epub`): the examples of this repository and both
+reference theses pass version 5.4.0 without a message.
+
+Equations stay MathML, which is part of EPUB 3. Reading apps built on a browser engine
+display it (Apple Books, Thorium, the calibre viewer); support on e-ink devices is
+uneven. For those, a second build can draw every equation, at the cost of a larger
+file and of formulas that are no longer text:
+
+```typ
+#show: web-rules.with(svg-math: true)
+```
+
 ## Limits
 
 - **Experimental export.** Both `html` and `bundle` are feature flags of Typst. Pin the
@@ -408,19 +464,25 @@ layer: how a host wants its headings and its table of contents is its own busine
 - **Frames are images.** Text inside an SVG frame is not searchable, a heading inside
   a frame is not a heading, and a footnote call inside a frame is not a link (the note
   itself is still listed).
-- **No access to `<head>`.** Typst writes it; metadata such as Open Graph or Google
-  Scholar tags cannot be added from the document.
+- **No access to `<head>`.** Typst writes it. The layer therefore puts its stylesheet
+  at the top of `<body>`, and a `<meta>` element emitted by a document
+  (`html.elem("meta", attrs: (name: "citation_title", content: "..."))`, for Google
+  Scholar or link previews) lands in `<body>` too, where no crawler looks.
+  `uv run tools/head.py web/dist` moves the styles, `<meta>` and `<link>` elements of
+  built pages to `<head>` and changes nothing else. It is a finishing step: pages are
+  correct without it.
 - **Equation numbers** are added by the layer because Typst does not print them yet
   (typst#8117). When it does, set `number-equations: false`.
 
 ## Updating the layer
 
-The copies of `web.typ`, `web-content.css`, `web.css` and `web.js` in your project are meant to stay
-unmodified: record local patches in the header of `web.typ`. To refresh them from a
+The copies of `web.typ`, `web-content.css`, `web.css`, `web.js` and `epub.py` in your
+project are meant to stay unmodified: record local patches in the header of `web.typ`. To refresh them from a
 checkout of this repository:
 
 ```bash
 uv run tools/sync.py path/to/your/project/templates/web
 ```
 
-A copy whose header lists local patches is left alone; `--force` overwrites it.
+`web.js` and `epub.py` are refreshed where they already are; `--js` and `--epub` add
+them. A copy whose header lists local patches is left alone; `--force` overwrites it.

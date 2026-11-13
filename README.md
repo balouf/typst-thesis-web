@@ -2,14 +2,16 @@
 
 A web edition for academic documents written in [Typst](https://typst.app/): a paper
 becomes one self-contained HTML page, a thesis becomes a searchable site, **without
-touching the sections**. Mathematics is native MathML.
+touching the sections**. Mathematics is native MathML. The same output packages as an
+EPUB book.
 
 **[Read the guide](https://balouf.github.io/typst-thesis-web/)**
 
 The repository holds:
 
 - `lib/` — the web layer you copy into your project: `web.typ` (show rules and page
-  functions), `web-content.css` and `web.css`, and `web.js` for multi-page sites;
+  functions), `web-content.css` and `web.css`, `web.js` for multi-page sites, and
+  `epub.py`, which turns a built page or site into an EPUB;
 - `tools/check.py` — compiles a web edition and reports what did not reach the HTML;
 - `examples/` — a paper and a bilingual thesis, ready to copy;
 - `src/` — the guide, which also covers LaTeX conversion, bilingual PDF output and
@@ -43,7 +45,8 @@ It targets **Typst 0.15.1**. HTML export is still experimental in Typst: pin the
 1. Copy [`examples/thesis`](examples/thesis) as your new project.
 2. Edit `templates/meta-data.typ`, replace the chapters, and list your pages in
    `main-html.typ` (one `chapter(...)` per page).
-3. Run `typst compile main.typ` for the PDF, `uv run web/build.py` for the site.
+3. Run `typst compile main.typ` for the PDF, `uv run web/build.py` for the site, its
+   PDFs and its EPUBs.
 
 The [guide](https://balouf.github.io/typst-thesis-web/) explains each step, and the one
 rule that matters: the order of the show rules in a web entry file.
@@ -52,6 +55,7 @@ rule that matters: the order of the show rules in a web entry file.
 
 ```bash
 uv run --with pytest pytest -q   # compiles the examples and checks their output
+EPUBCHECK=path/to/epubcheck.jar uv run --with pytest pytest -q   # also validates the EPUBs
 uv run tools/sync.py             # refreshes the copies of lib/ kept in examples/
 ```
 
