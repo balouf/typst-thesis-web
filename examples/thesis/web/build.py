@@ -8,9 +8,10 @@
     uv run web/build.py --lang fr --skip-pdf  # quick loop on one language
 
 For each language: one Typst bundle (web/dist/<lang>/, one HTML page per
-chapter, written by Typst from main-html.typ), one PDF (web/dist/pdf/) and one
-Pagefind search index. Plus a redirect page at the root. This script only runs
-commands and cleans up: it never rewrites the HTML.
+chapter, written by Typst from main-html.typ), one PDF (web/dist/pdf/), one
+EPUB made from the bundle (web/dist/epub/) and one Pagefind search index. Plus
+a redirect page at the root. This script only runs commands and cleans up: it
+never rewrites the HTML.
 """
 
 from __future__ import annotations
@@ -19,15 +20,18 @@ import argparse
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "web" / "dist"
 
 # TODO: adapt — languages (the first one is where the root page redirects by
-# default) and the name of the PDF, which chapters/cover.typ links to.
+# default) and the names of the PDF and of the EPUB, which chapters/cover.typ
+# links to.
 LANGS = ["fr", "en"]
 PDF_NAME = "thesis-{lang}.pdf"
+EPUB_NAME = "thesis-{lang}.epub"
 
 # Typst says this on every web compilation.
 NOISE = ("html export is under active development", "bundle export is experimental")
@@ -63,6 +67,25 @@ def build_pdf(lang: str) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     typst("--input", f"lang={lang}", "main.typ", str(out))
     print(f"  {lang}: pdf/{out.name}, {out.stat().st_size // 1024} KiB")
+
+
+def build_epub(lang: str) -> None:
+    """The pages of one language as a book, with the first page of the PDF as its cover."""
+    out = DIST / "epub" / EPUB_NAME.format(lang=lang)
+    with tempfile.TemporaryDirectory() as tmp:
+        cover = Path(tmp) / "cover.png"
+        typst("--input", f"lang={lang}", "--pages", "1", "--ppi", "100", "main.typ", str(cover))
+        packager = ROOT / "templates" / "web" / "epub.py"
+        done = subprocess.run(
+            [sys.executable, str(packager), str(DIST / lang), "-o", str(out), "--cover", str(cover)],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+    if done.returncode != 0:
+        sys.exit(f"epub.py failed: {done.stderr.strip()}")
+    for line in done.stdout.splitlines():
+        if line.startswith("note:"):
+            print("    " + line)
+    print(f"  {lang}: epub/{out.name}, {out.stat().st_size // 1024} KiB")
 
 
 def build_search(lang: str) -> None:
@@ -106,6 +129,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--lang", action="append", choices=LANGS, help="build only this language (repeatable)")
     p.add_argument("--skip-pdf", action="store_true")
+    p.add_argument("--skip-epub", action="store_true")
     p.add_argument("--skip-search", action="store_true")
     args = p.parse_args()
     langs = args.lang or LANGS
@@ -117,6 +141,10 @@ def main() -> None:
         print("PDF")
         for lang in langs:
             build_pdf(lang)
+    if not args.skip_epub:
+        print("EPUB")
+        for lang in langs:
+            build_epub(lang)
     if not args.skip_search:
         print("Search")
         for lang in langs:

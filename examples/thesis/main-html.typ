@@ -2,7 +2,7 @@
 // Thesis — web entry point (one HTML page per chapter)
 // =============================================================================
 //
-// Whole site (both languages, PDFs, search index):
+// Whole site (both languages, PDFs, EPUBs, search index):
 //   uv run web/build.py
 // One language by hand:
 //   typst compile --features html,bundle --format bundle --input lang=fr main-html.typ web/dist/fr

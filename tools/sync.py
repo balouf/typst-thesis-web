@@ -2,15 +2,15 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Copy the layer (lib/web.typ, web-content.css, web.css, web.js) to where it is vendored.
+"""Copy the layer (lib/: web.typ, its stylesheets, web.js, epub.py) to where it is vendored.
 
     uv run tools/sync.py                 # refresh the copies kept in examples/
     uv run tools/sync.py DEST [DEST...]  # vendor into other folders
     uv run tools/sync.py --check         # exit 1 if a copy in examples/ differs
 
-web.js is only needed by multi-page sites: it is copied when the destination
-already has one, or with --js. A copy whose web.typ header lists local patches
-is left alone, unless --force is given.
+web.js is only needed by multi-page sites and epub.py by an EPUB edition: each
+is copied when the destination already has one, or with --js / --epub. A copy
+whose web.typ header lists local patches is left alone, unless --force is given.
 """
 
 from __future__ import annotations
@@ -23,7 +23,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LIB = REPO / "lib"
-FILES = ["web.typ", "web-content.css", "web.css", "web.js"]
+FILES = ["web.typ", "web-content.css", "web.css", "web.js", "epub.py"]
+OPTIONAL = {"web.js": "js", "epub.py": "epub"}  # file -> option that asks for it
 
 
 def copies_in_repo() -> list[Path]:
@@ -31,8 +32,8 @@ def copies_in_repo() -> list[Path]:
     return sorted(p.parent for p in (REPO / "examples").rglob("web.typ") if p.parent.name == "web")
 
 
-def wanted(dest: Path, with_js: bool) -> list[str]:
-    return [f for f in FILES if f != "web.js" or with_js or (dest / f).exists()]
+def wanted(dest: Path, args: argparse.Namespace) -> list[str]:
+    return [f for f in FILES if f not in OPTIONAL or getattr(args, OPTIONAL[f]) or (dest / f).exists()]
 
 
 def patched(dest: Path) -> bool:
@@ -48,6 +49,7 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("dest", nargs="*", type=Path, help="destination folders (default: the copies in examples/)")
     p.add_argument("--js", action="store_true", help="copy web.js too")
+    p.add_argument("--epub", action="store_true", help="copy epub.py too")
     p.add_argument("--check", action="store_true", help="compare instead of copying")
     p.add_argument("--force", action="store_true", help="overwrite a copy that lists local patches")
     args = p.parse_args()
@@ -58,7 +60,7 @@ def main() -> int:
             stale += 1
             print(f"skipped: {dest} lists local patches in web.typ (--force overwrites them)")
             continue
-        for name in wanted(dest, args.js):
+        for name in wanted(dest, args):
             target = dest / name
             same = target.exists() and filecmp.cmp(LIB / name, target, shallow=False)
             if args.check:

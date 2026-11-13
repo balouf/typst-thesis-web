@@ -1,5 +1,7 @@
 // Web edition, one self-contained HTML page:
 //   typst compile --features html web.typ paper.html
+// The same page as an EPUB book:
+//   uv run web/epub.py paper.html -o paper.epub
 //
 // Same sections as main.typ. No layout template: the web layer (web/web.typ, a
 // vendored copy of typst-thesis-web) supplies headings, title block and figure

@@ -8,7 +8,8 @@
 #import "template.typ": content-rules, counter-rules
 
 #show: content-rules
-#show: web-rules
+// `--input math=svg` draws every equation (see the tests).
+#show: web-rules.with(..if sys.inputs.at("math", default: "mathml") == "svg" { (svg-math: true) })
 #show: counter-rules
 #show: article.with(
   title: [A hostile template],

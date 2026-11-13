@@ -10,6 +10,9 @@ on:
     # with the latest Typst to learn early when its output changes.
     - cron: '0 6 * * 1'
 
+env:
+  EPUBCHECK_VERSION: '5.4.0'
+
 jobs:
   examples:
     runs-on: ubuntu-latest
@@ -32,6 +35,13 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: false
+
+      - name: Install EPUBCheck
+        # The tests validate the EPUB editions when EPUBCHECK is set (Java is on the runner).
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/epubcheck.zip" "https://github.com/w3c/epubcheck/releases/download/v${EPUBCHECK_VERSION}/epubcheck-${EPUBCHECK_VERSION}.zip"
+          unzip -q "$RUNNER_TEMP/epubcheck.zip" -d "$RUNNER_TEMP"
+          echo "EPUBCHECK=$RUNNER_TEMP/epubcheck-${EPUBCHECK_VERSION}/epubcheck.jar" >> "$GITHUB_ENV"
 
       - name: Compile the examples and check their output
         run: uv run --with pytest pytest -q

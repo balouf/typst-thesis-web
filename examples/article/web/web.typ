@@ -1,10 +1,10 @@
 // web.typ — web export layer (HTML and bundle targets) for Typst documents.
 // Source: https://github.com/balouf/typst-thesis-web (MIT)
-// Version 0.3.0 (2026-11-12), checked with Typst 0.15.1.
+// Version 0.4.0 (2026-11-13), checked with Typst 0.15.1.
 // Vendored copy: keep it unmodified and list local patches below.
 //   Local patches: none.
-// Ships with web-content.css, web.css (and web.js for multi-page sites): keep
-// them next to this file.
+// Ships with web-content.css, web.css (and web.js for multi-page sites, epub.py
+// for an EPUB edition): keep them next to this file.
 //
 // A web edition is a small entry file next to the PDF one. Order matters:
 //   1. project rules that REPLACE elements (numbering, custom `show ref`, ...)
@@ -23,7 +23,7 @@
   message: "web.typ needs Typst 0.15 or later",
 )
 
-#let web-version = version(0, 3, 0)
+#let web-version = version(0, 4, 0)
 
 // -----------------------------------------------------------------------------
 // Guards and small helpers
@@ -349,7 +349,8 @@
 /// - MathML does not show equation numbers (typst#8117): numbered block
 ///   equations get one.
 /// - `overline`/`underline`, dropped by MathML export, become accents.
-/// - Equations using a function listed in `svg` fall back to SVG.
+/// - Equations using a function listed in `svg` fall back to SVG; `svg: true`
+///   draws every equation, for reading apps that have no MathML.
 /// - Browsers have no tolerance when they stretch delimiters, so `(x + 1)`
 ///   gets oversized parentheses. With `tame-delimiters`, delimiters around
 ///   content that is not tall are emitted as fixed-size ones.
@@ -366,7 +367,7 @@
   show math.underline: it => on-web(it, it => math.attach(math.limits(it.body), b: sym.macron))
   show math.equation: it => on-web(it, it => {
     set math.equation(supplement: _math-marker)
-    if svg.len() > 0 and _contains(it.body, c => c.func() in svg) {
+    if svg == true or (type(svg) == array and svg.len() > 0 and _contains(it.body, c => c.func() in svg)) {
       if it.block { frame(it, width: frame-width) } else { box(html.frame(it)) }
     } else if it.block and number and it.numbering != none {
       html.elem("div", attrs: (class: "eq", .._anchor(it)), {
@@ -692,7 +693,8 @@
 ///   `css` (extra CSS text appended to the stylesheets).
 /// - sub: indent the entry in the navigation.
 /// - reset: content inserted first (counter resets).
-/// - chrome: `false` leaves the navigation out (EPUB, embedding).
+/// - chrome: `false` leaves the navigation out (embedding). Keep it for an
+///   EPUB: epub.py reads the order of the pages in it, then drops it.
 #let page(path, title: none, site: (:), sub: false, reset: none, chrome: true, body) = {
   let inner(bundle) = {
     [#metadata((path: path, title: title, sub: sub, bundle: bundle))#_page-mark]

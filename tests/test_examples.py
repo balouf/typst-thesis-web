@@ -5,14 +5,22 @@
 Needs `typst` on PATH. HTML export is experimental and its output may change
 between Typst versions: these tests are what tells us when it does. The
 expected numbers are the census of each example's output (see tools/check.py).
+
+The EPUB editions are also run through EPUBCheck when the environment variable
+EPUBCHECK holds the path of epubcheck.jar (and `java` is on PATH).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -128,6 +136,107 @@ def test_content_stylesheet_is_embeddable():
                 start = i + 1
     assert len(selectors) > 50
     assert [s for s in selectors if not s.startswith(allowed)] == []
+
+
+# EPUB editions: (working directory, typst arguments, output name)
+BOOKS = {
+    "torture": (".", ["--root", ".", "--features", "html", "examples/torture/web.typ"], "torture.html"),
+    "torture-svg": (".", ["--root", ".", "--features", "html", "--input", "math=svg", "examples/torture/web.typ"], "torture.html"),
+    "thesis-fr": ("examples/thesis", ["--features", "html,bundle", "--format", "bundle", "--input", "lang=fr", "main-html.typ"], "site"),
+}
+XHTML = "{http://www.w3.org/1999/xhtml}"
+OPF = "{http://www.idpf.org/2007/opf}"
+
+
+def make_book(name: str, tmp_path: Path) -> Path:
+    cwd, args, out = BOOKS[name]
+    done = run(["typst", "compile", *args, str(tmp_path / out)], cwd)
+    assert done.returncode == 0, done.stderr
+    book = tmp_path / f"{name}.epub"
+    done = subprocess.run(
+        [sys.executable, str(REPO / "lib" / "epub.py"), str(tmp_path / out), "-o", str(book)],
+        capture_output=True, text=True, encoding="utf-8", env={**os.environ, "SOURCE_DATE_EPOCH": "0"},
+    )
+    assert done.returncode == 0, done.stderr
+    return book
+
+
+@pytest.mark.parametrize("name", BOOKS)
+def test_epub_edition(name: str, tmp_path: Path):
+    """The book is a well-formed EPUB: container, manifest, unique ids, links."""
+    book = make_book(name, tmp_path)
+    with zipfile.ZipFile(book) as z:
+        first = z.infolist()[0]
+        assert (first.filename, first.compress_type, z.read(first)) == ("mimetype", zipfile.ZIP_STORED, b"application/epub+zip")
+        files = {n.removeprefix("EPUB/"): z.read(n) for n in z.namelist() if n.startswith("EPUB/")}
+    package = ET.fromstring(files["package.opf"])
+    items = {i.get("id"): i for i in package.iter(OPF + "item")}
+    assert {i.get("href") for i in items.values()} == set(files) - {"package.opf"}
+    spine = [items[r.get("idref")].get("href") for r in package.iter(OPF + "itemref")]
+
+    ids, links = {}, []
+    for path in spine + ["nav.xhtml"]:
+        page = ET.fromstring(files[path])  # raises on anything that is not XML
+        found = [e.get("id") for e in page.iter() if e.get("id")]
+        assert len(found) == len(set(found)), f"duplicate ids in {path}"
+        ids[path] = set(found)
+        assert not {e.tag for e in page.iter()} & {XHTML + "script", XHTML + "style", XHTML + "aside"}
+        folder = Path(path).parent
+        links += [(path, (folder / a.get("href")).as_posix() if not a.get("href").startswith("#") else path + a.get("href"))
+                  for a in page.iter(XHTML + "a") if a.get("href") and not re.match(r"[a-z][a-z0-9+.-]*:", a.get("href"))]
+    for source, target in links:
+        path, _, fragment = target.partition("#")
+        assert path in ids, f"{source}: link to {target}"
+        assert not fragment or fragment in ids[path], f"{source}: link to {target}"
+
+    text = files[spine[-1 if name == "thesis-fr" else 0]].decode("utf-8")
+    if name == "thesis-fr":
+        assert spine == ["text/index.xhtml", "text/example.xhtml", "text/second.xhtml", "text/bibliography.xhtml"]
+        nav = files["nav.xhtml"].decode("utf-8")
+        assert "<span>Partie I — Exemples</span>" in nav and 'href="text/second.xhtml#sec-second-section"' in nav
+        assert "EPUB" not in files["text/index.xhtml"].decode("utf-8")  # the download links are `web-only`
+    else:
+        math = "mathml" in (items["page-1"].get("properties") or "")
+        assert math == (name == "torture") and ("<math" in text) == math
+        assert 'epub:type="noteref"' in text and "data:image" not in text
+
+    again = tmp_path / "again"
+    again.mkdir()
+    shutil.copy(book, again / "first.epub")
+    assert make_book(name, tmp_path).read_bytes() == (again / "first.epub").read_bytes()  # reproducible
+
+
+@pytest.mark.skipif(not os.environ.get("EPUBCHECK"), reason="EPUBCHECK (path of epubcheck.jar) is not set")
+@pytest.mark.parametrize("name", BOOKS)
+def test_epub_edition_passes_epubcheck(name: str, tmp_path: Path):
+    book = make_book(name, tmp_path)
+    # EPUBCheck writes in the language and the encoding of the system.
+    done = subprocess.run(["java", "-jar", os.environ["EPUBCHECK"], "--failonwarnings", str(book)], capture_output=True, text=True, errors="replace")
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_head_tool(tmp_path: Path):
+    """tools/head.py moves the stylesheet to <head> and nothing else."""
+    spec = importlib.util.spec_from_file_location("head", TOOLS / "head.py")
+    head = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(head)
+    out = tmp_path / "torture.html"
+    done = run(["typst", "compile", "--root", ".", "--features", "html", "examples/torture/web.typ", str(out)], ".")
+    assert done.returncode == 0, done.stderr
+    before = out.read_text(encoding="utf-8")
+    after = head.hoist(before)
+
+    def body(page: str) -> str:
+        return page[page.index("<body", page.index("</head>")):]
+
+    assert "<style" in body(before) and "<style" not in body(after)
+    assert re.sub(r"<style>.*?</style>", "", body(before), flags=re.S) == body(after)
+    assert len(after) == len(before) and head.hoist(after) == after
+
+
+def test_layer_files_share_a_version():
+    version = re.search(r"// Version (\S+)", (REPO / "lib" / "web.typ").read_text(encoding="utf-8"))[1]
+    assert f"Version {version} " in (REPO / "lib" / "epub.py").read_text(encoding="utf-8")
 
 
 def test_vendored_copies_are_current():
