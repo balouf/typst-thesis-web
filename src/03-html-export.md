@@ -445,10 +445,17 @@ Validate a book with [EPUBCheck](https://www.w3.org/publishing/epubcheck/)
 (`java -jar epubcheck.jar thesis.epub`): the examples of this repository and both
 reference theses pass version 5.4.0 without a message.
 
-Equations stay MathML, which is part of EPUB 3. Reading apps built on a browser engine
-display it (Apple Books, Thorium, the calibre viewer); support on e-ink devices is
-uneven. For those, a second build can draw every equation, at the cost of a larger
-file and of formulas that are no longer text:
+Equations stay MathML, which is part of EPUB 3, so the book needs a reading app built
+on a browser engine. calibre displays both reference theses as intended; Apple Books
+and Thorium are built the same way, but were not tried. SumatraPDF is not such an app:
+its engine (MuPDF) has no MathML, discards the whole stylesheet at the first selector
+it does not know, and leaves out the images set inside a drawing. Moon+ Reader, tried
+briefly, is acceptable except for the drawings: it does not draw inline SVG, and only
+shows the bitmap images set inside one.
+
+Where MathML is missing but inline SVG is drawn well, a second build can draw every
+equation, at the cost of a larger file and of formulas that are no longer text (this
+does not rescue SumatraPDF, which blurs and clips such drawings):
 
 ```typ
 #show: web-rules.with(svg-math: true)
@@ -488,3 +495,6 @@ uv run tools/sync.py path/to/your/project/templates/web
 
 `web.js` and `epub.py` are refreshed where they already are; `--js` and `--epub` add
 them. A copy whose header lists local patches is left alone; `--force` overwrites it.
+
+Each version of the layer is tagged in this repository (`v0.4.1`): the version in the
+header of a copy names the tag it comes from.
