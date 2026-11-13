@@ -126,7 +126,7 @@ inside an SVG frame either (frames are laid out as paged content).
 | a `box` that holds a `place` (one drawing set on another) | one SVG, sized to cover what sticks out of the box |
 | `heading` | a real `<h1>`–`<h6>` with its number, whatever the template did, and a stable id (see below) |
 | `figure` with a string `kind` and no caption | a statement: `<div class="env env-KIND">` |
-| `figure` whose kind is in `frame-kinds` (`"algorithm"`) | an SVG with its caption |
+| `figure` whose kind is in `frame-kinds` (`"algorithm"`) | an SVG with its caption (or text: see [Algorithms](#algorithms)) |
 | other figures | `<figure>` and `<figcaption>`; a drawing that contains no image is framed |
 | numbered block equation | the equation and its number |
 | `math.overline`, `math.underline` | an accent (MathML export drops them) |
@@ -135,6 +135,8 @@ inside an SVG frame either (frames are laid out as paged content).
 | `ref(form: "page")` | nothing (it is an error in HTML) |
 | `enum` with a numbering pattern | a list that shows `(i)`, `(ii)`... |
 | emphasis around paragraphs or lists | a `<div class="em">` (valid HTML) |
+| `strong` or `emph` inside an equation | bold or italic math (an HTML element is not valid in MathML) |
+| `strong` with a zero delta | plain text |
 | block with a fill or a stroke | `<div class="box">`, colors passed to the stylesheet |
 
 Labels become **stable anchors**: `<thm:main>` gives `id="thm-main"` (the colon is not
@@ -294,10 +296,37 @@ This works for anything that is not referenced by a label. A function whose resu
 receives a label (`#theorem[...] <thm:x>`) must return the labelled element itself, not
 a `context` block.
 
+## Algorithms
+
+An algorithm is a drawing by default: packages lay it out with grids, boxes and drawn
+guides, which have no HTML equivalent. With the [`algo`](https://typst.app/universe/package/algo)
+package it can be text instead (equations in MathML, working links and notes, text that
+a search finds): wrap the call in `algo-lines`, and take the kind out of `frame-kinds`.
+
+```typ
+#import "@preview/algo:0.3.6": algo, i, d, comment
+#import "web/web.typ": algo-lines
+
+#let alg(..args, body) = figure(
+  algo-lines(indent: 15pt, algo(indent-size: 15pt, indent-guides: 1pt + gray, line-numbers: false)[#body]),
+  kind: "algorithm", supplement: [Algorithm], ..args,
+)
+```
+
+```typ
+#show: web-rules.with(frame-kinds: ())   // in the web entry
+```
+
+`algo-lines` does nothing in the PDF. On the web it turns each line into an indented
+block and lets the stylesheet draw the indent guides; `indent` is the indent size given
+to the package. It relies on how `algo` builds a line (a box holding a padded line), so
+pin the version of the package; another package needs its own adapter, or stays a
+drawing. `examples/thesis` is set up this way.
+
 ## Drawings
 
 Whatever has no HTML equivalent is laid out by Typst exactly as in the PDF and inlined
-as an SVG: cetz and fletcher drawings, grids of sub-figures, algorithms, shapes. Inside
+as an SVG: cetz and fletcher drawings, grids of sub-figures, shapes. Inside
 these frames, references still link, and the text uses the font and size set in the
 entry file (which is all `set text(font: ...)` is used for in a web entry).
 
