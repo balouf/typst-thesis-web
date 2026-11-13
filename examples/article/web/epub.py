@@ -5,7 +5,7 @@
 """epub.py — package a web edition made with web.typ as an EPUB 3 book.
 
 Source: https://github.com/balouf/typst-thesis-web (MIT)
-Version 0.4.0 (2026-11-13), checked with Typst 0.15.1 and EPUBCheck 5.4.0.
+Version 0.4.1 (2026-11-13), checked with Typst 0.15.1 and EPUBCheck 5.4.0.
 Vendored copy: keep it unmodified, next to web-content.css.
 
     uv run web/epub.py paper.html -o paper.epub    # a page (typst compile --features html)

@@ -1,6 +1,6 @@
 // web.typ — web export layer (HTML and bundle targets) for Typst documents.
 // Source: https://github.com/balouf/typst-thesis-web (MIT)
-// Version 0.4.0 (2026-11-13), checked with Typst 0.15.1.
+// Version 0.4.1 (2026-11-13), checked with Typst 0.15.1.
 // Vendored copy: keep it unmodified and list local patches below.
 //   Local patches: none.
 // Ships with web-content.css, web.css (and web.js for multi-page sites, epub.py
@@ -23,7 +23,7 @@
   message: "web.typ needs Typst 0.15 or later",
 )
 
-#let web-version = version(0, 4, 0)
+#let web-version = version(0, 4, 1)
 
 // -----------------------------------------------------------------------------
 // Guards and small helpers
@@ -241,13 +241,20 @@
   ""
 }
 
-#let _ascii = (
-  "à": "a", "â": "a", "ä": "a", "á": "a", "ã": "a", "å": "a", "ç": "c", "é": "e", "è": "e", "ê": "e", "ë": "e",
-  "í": "i", "ì": "i", "î": "i", "ï": "i", "ñ": "n", "ó": "o", "ò": "o", "ô": "o", "ö": "o", "õ": "o", "ø": "o",
-  "ú": "u", "ù": "u", "û": "u", "ü": "u", "ý": "y", "ÿ": "y", "œ": "oe", "æ": "ae", "ß": "ss",
-)
+// Letters that Unicode does not decompose into a base letter and an accent.
+#let _ascii = ("ø": "o", "œ": "oe", "æ": "ae", "ß": "ss", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i")
+
+// Lowercase ASCII words joined by hyphens, for ids and class names. Accents
+// go by decomposing each letter (NFKD) and dropping the combining marks, so
+// that any accented Latin letter keeps its base: `Erdős–Rényi` gives
+// `erdos-renyi`.
 #let _slug(s) = {
-  lower(s).clusters().map(c => _ascii.at(c, default: c)).join("").replace(regex("[^a-z0-9]+"), "-").trim("-")
+  lower(s)
+    .normalize(form: "nfkd")
+    .replace(regex("\p{M}+"), "")
+    .replace(regex("[" + _ascii.keys().join() + "]"), m => _ascii.at(m.text))
+    .replace(regex("[^a-z0-9]+"), "-")
+    .trim("-")
 }
 
 /// Id of a heading: its label if it has one, else a slug of its text

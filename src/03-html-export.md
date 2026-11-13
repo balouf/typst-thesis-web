@@ -200,8 +200,10 @@ name.
 Every element with a label gets an id made from it (`<thm:main>` gives `#thm-main`). A
 heading without a label gets an id made from its text (`Related work` gives
 `#related-work`, a second one on the same page `#related-work-2`), so a link to a
-section keeps working when the document changes elsewhere. Label a heading to choose
-its anchor; pass `heading-id: it => none` to `web-rules` to leave the ids to Typst.
+section keeps working when the document changes elsewhere. Accented letters keep their
+base letter (`Erdős–Rényi graphs` gives `#erdos-renyi-graphs`). Label a heading to
+choose its anchor; pass `heading-id: it => none` to `web-rules` to leave the ids to
+Typst.
 
 ## A thesis: one page per chapter
 

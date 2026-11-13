@@ -125,3 +125,7 @@ A heading without a label gets an id made from its text.
 == Further reading
 
 A second heading with the same text gets a suffix.
+
+== Erdős–Rényi graphs
+
+Accented letters keep their base letter in the id.

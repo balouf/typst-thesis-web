@@ -40,7 +40,7 @@ EXAMPLES = {
     "torture": (
         ".",
         ["examples/torture/web.typ", "--root", "."],
-        {"headings": 9, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
+        {"headings": 10, "statements": 4, "html-figures": 5, "captions": 5, "svg-frames": 10, "block-equations": 4,
          "numbered-equations": 3, "inline-equations": 6, "footnotes": 1, "citations": 2},
     ),
     "thesis-fr": (
@@ -114,6 +114,7 @@ def test_heading_ids_and_emails(tmp_path: Path):
     assert 'id="sec-math"' in page  # from the label
     assert 'id="headings-without-a-label"' in page  # from the text
     assert 'id="further-reading"' in page and 'id="further-reading-2"' in page  # same text twice
+    assert 'id="erdos-renyi-graphs"' in page  # any accented letter keeps its base
     assert "mailto:ada@example.org" in page
     done = run([*cmd, "--input", "emails=false", str(out)], ".")
     assert done.returncode == 0, done.stderr
